@@ -1,4 +1,4 @@
-# dadyjs
+# popijs
 
 To install dependencies:
 
