@@ -15,10 +15,5 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^2.8.7"
   },
-  "dependencies": {
-    "htm": "^3.1.1",
-    "preact": "^10.22.0",
-    "preact-render-to-string": "^6.5.3",
-    "react-router-dom": "^6.23.1"
-  }
+  "dependencies": {}
 }
