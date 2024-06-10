@@ -1,5 +1,3 @@
-import {html, render} from "./main";
-import { TestComponent } from "./routes";
 import path from "path";
 
 function getHtmlTemplate(r, c){
@@ -12,6 +10,7 @@ function getHtmlTemplate(r, c){
 		
 		<body id="root">
 		${ r }
+		<p id="juan"></p>
 		</body>
 		<script type="module">
       import tinyStore from '/public/tinyStore.js'
@@ -19,7 +18,8 @@ function getHtmlTemplate(r, c){
     </script>
 		<script type="module">
 		  
-		  const [state, setState] = tinyStore()
+		  const [state, setState] = tinyStore({comida: 0})
+		  const [com, setComida] = tinyStore({comida: 0})
 		  window.document.popijs_STATE = ${c}
 		  let comida = 0
 		  
@@ -31,7 +31,6 @@ function getHtmlTemplate(r, c){
 		  function doclick(){
 		    // function to do logic
 		    // do front or back logic
-		    console.log('clicked')
 		    comida += 1
 		  }
 		
@@ -44,46 +43,80 @@ function getHtmlTemplate(r, c){
 		        ],
 		      children: [],
 		      props: {}
+		    }],
+		    ['p', '', {events:[], children: [], props: {}}],
+		    ['p', '', {events:[], children: [], props: {}}],
+		    ['div', 'un div', {events: [['click', () => {alert('el div')}]], children: [
+		      ['button', 'under div', {
+		      events: [
+		          ["click", () => {
+		            console.log('ui')
+		          }]
+		        ],
+		      children: [],
+		      props: {}
 		    }]
+		    ], props: {}}]
 		  ]
 		 
-		  // debugger
-		  function init(){
-		    // debugger
-		    htmlTree.forEach((treeElement) => {
-		      // debugger;
+		  function render(tree, node='root'){
+		    tree.forEach((treeElement) => {
 		      // 0 = tag name
 		      // 1 = element text
 		      // 2 = element events|children|props
+		      let el;
+		      let first_child;
+		      if (Array.isArray(treeElement[2].children) && treeElement[2].children[0]){
+		        // create the fragment, then append the element, the append the child el...
+		        // then append to root elemnt
+		        el = document.createDocumentFragment()
+		        first_child = document.createElement(treeElement[0])
+		        first_child.innerText = treeElement[1]
+		        el.appendChild(first_child)
+		      }
+		      if (!el){
+		        el = document.createElement(treeElement[0])
+		      }
 		      
-          const el = document.createElement(treeElement[0])
           treeElement[2].events.forEach((event) => {
             // debugger;
             el.addEventListener(event[0], () => {
               const fn = event[1]
               fn()
               // pass the state value
-              updateTextElement(el, 'k')
+              updateTextElement(el, 'd')
             })
           })
+          // debugger;
+          if (Array.isArray(treeElement[2].children) && treeElement[2].children[0]){
+            // debugger;
+            if (first_child){
+              const fu = document.createElement(treeElement[2].children[0][0])
+              fu.innerText = treeElement[2].children[0][1]
+              // debugger
+              first_child.appendChild(fu)
+            }
+            // render(treeElement[2].children, el)
+          }
+		      
           el.innerText = treeElement[1]
-          document.getElementById("root").appendChild(el)
+          if (node === 'root'){
+           document.getElementById(node).appendChild(el)
+           return
+          }
+          // debugger
+          // console.log(node.parentNode)
+          // node.appendChild(el)
 		    })
-		    // const button = document.createElement("button")
-		    // button.addEventListener('click', () => {
-		    //   doclick()
-		    //   updateTextElement(button, comida)
-		    // })
-		    // button.innerText = 'click me'
-		    // document.getElementById("root").appendChild(button)2
+		  }
+		  function init(){
+		    render(htmlTree)
 		  }
 		  init()
     </script>
 		</html>
 		`
 }
-
-// const result = h("div", {id: "test"}, "hello")
 
 const port = Bun.env.POPI_PORT || 4321
 
