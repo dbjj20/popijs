@@ -2,6 +2,9 @@
   "name": "dadyjs",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun --watch index.js"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "eslint": "^8.38.0",
