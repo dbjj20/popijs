@@ -29,22 +29,54 @@ const isPopiProperty = (p) => {
   return isPopiProp
 }
 
+const tag = (name, props, children) => {
+  if (!name) {
+    return []
+  }
+  return [name, props, children]
+}
+
+const div = (props, children) => {
+  return ['div', props, children]
+}
+
+const component = div(() => testTagProperties, [
+  div(),
+  div(),
+  div([
+    tag('span', 'juana no es maria'),
+    tag('hr'),
+    tag('span', 'juana no es maria2')
+  ])
+])
+
 const treeV1 = [
+  component,
   ['div', ['div', [
-    ['button', testTagProperties],
-    ['button', testTagProperties]
+    ['button', () => testTagProperties],
+    ['button', () => testTagProperties],
+    ['button', () => testTagProperties1]
     ,['h1', 'klk']]]],
   ['div', ['div', [['h1', 'klk'], ['h1', 'klk']]]],
   ['div', ['div', [['h1', 'klk'], ['h1', 'klk']]]],
   ['div', ['div', [['h1', 'klk'], ['h1', 'klk']]]],
 ];
 
+const verifyChildren = (children, element) => {
+  if (typeof children !== "undefined" && typeof children === "object" && Array.isArray(children) && !Array.isArray(children[0])){
+    renderV1([children], element)
+  }
+  if (typeof children !== "undefined" && typeof children === "object" && Array.isArray(children) && Array.isArray(children[0])){
+    renderV1(children, element)
+  }
+}
+
 function renderV1(tree, root = document.getElementById("root")){
   const mainElement = document.createDocumentFragment()
   
   const provisional = []
   
-  tree.forEach(([tagName, properties]) => {
+  tree.forEach(([tagName, properties, children]) => {
     const element = document.createElement(tagName)
     let skipRenderFn = false;
     
@@ -52,24 +84,20 @@ function renderV1(tree, root = document.getElementById("root")){
       element.innerText = properties
     }
     
-    if (isPopiProperty(properties)){
-      skipRenderFn = true
-      const [str, props, events] = properties
+    if (typeof properties === "function"){
+      const [str, props, events] = properties();
       element.innerText = str
-      events.forEach(([eventName, fn])=>{
+      events.forEach(([eventName, fn]) => {
         element.addEventListener(eventName, fn)
       })
     }
-    
-    if (!skipRenderFn){
-      if (typeof properties !== "undefined" && typeof properties === "object" && Array.isArray(properties) && !Array.isArray(properties[0])){
-        renderV1([properties], element)
-      }
-      if (typeof properties !== "undefined" && typeof properties === "object" && Array.isArray(properties) && Array.isArray(properties[0])){
-        renderV1(properties, element)
-      }
+    if (properties){
+      verifyChildren(properties, element)
     }
-  
+    if (children){
+      verifyChildren(children, element)
+    }
+    
     provisional.push(element)
   })
   
