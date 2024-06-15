@@ -3,31 +3,22 @@
 const testFn = () => console.log("yay!")
 const testFn1 = () => console.log("yay1!")
 
+const isFn = (fn) => {
+  return typeof fn === "function"
+}
+
+const verifyProperties = (props) => {
+  if (isFn(props)){
+    debugger
+    return props()
+  }
+  props;
+}
+
+const isArr = (a) => Array.isArray(a)
+
 const testTagProperties = ['text', { popiJs: true }, [['click', testFn]]]
 const testTagProperties1 = ['yay!', { popiJs: true }, [['click', testFn1]]]
-
-const isObject = function(a) {
-  return (!!a) && (a.constructor === Object);
-};
-
-const isPopiProperty = (p) => {
-  let isPopiProp = false;
-  if (Array.isArray(p) && p[0]){
-    // destructure p
-    const [str, props, events] = p;
-    if (typeof str !== "string"){
-      isPopiProp = false
-    }
-    if (isObject(props)){
-      isPopiProp = true
-    }
-    if (!Array.isArray(events)){
-      isPopiProp = false
-    }
-  }
-  
-  return isPopiProp
-}
 
 const tag = (name, props, children) => {
   if (!name) {
@@ -40,23 +31,32 @@ const div = (props, children) => {
   return ['div', props, children]
 }
 
-const component = div(() => testTagProperties, [
-  div(),
-  div(),
-  div([
-    tag('span', 'juana no es maria'),
-    tag('hr'),
-    tag('span', 'juana no es maria2')
-  ])
-])
+const cluster = div( null,() => {
+  
+  return [
+    div(),
+    div(1,() => tag('span', 'tag fn')),
+    div([
+      tag('span', 'juana no es maria'),
+      tag('hr'),
+      tag('span', 'juana no es maria2', (props) => {
+        // debugger
+        return div([
+          tag('span', 'juana no es maria'),
+          tag('hr'),
+          tag('span', 'juana no es maria2')
+        ])
+      })
+    ])
+  ]
+})
 
 const treeV1 = [
-  component,
+  cluster,
   ['div', ['div', [
     ['button', () => testTagProperties],
     ['button', () => testTagProperties],
-    ['button', () => testTagProperties1]
-    ,['h1', 'klk']]]],
+    ['button', () => testTagProperties1],['h1', 'klk']]]],
   ['div', ['div', [['h1', 'klk'], ['h1', 'klk']]]],
   ['div', ['div', [['h1', 'klk'], ['h1', 'klk']]]],
   ['div', ['div', [['h1', 'klk'], ['h1', 'klk']]]],
@@ -78,24 +78,29 @@ function renderV1(tree, root = document.getElementById("root")){
   
   tree.forEach(([tagName, properties, children]) => {
     const element = document.createElement(tagName)
-    let skipRenderFn = false;
     
     if (typeof properties !== "undefined" && typeof properties === "string"){
       element.innerText = properties
     }
     
-    if (typeof properties === "function"){
+    if (isFn(properties)){
       const [str, props, events] = properties();
       element.innerText = str
       events.forEach(([eventName, fn]) => {
         element.addEventListener(eventName, fn)
       })
     }
+    
     if (properties){
       verifyChildren(properties, element)
     }
+    
     if (children){
-      verifyChildren(children, element)
+      let p = children
+      if (isFn(children)){
+        p = children({defaultProp: 'klk'})
+      }
+      verifyChildren(p, element)
     }
     
     provisional.push(element)
