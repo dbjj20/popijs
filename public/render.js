@@ -9,7 +9,6 @@ const isFn = (fn) => {
 
 const verifyProperties = (props) => {
   if (isFn(props)){
-    debugger
     return props()
   }
   props;
@@ -31,6 +30,7 @@ const div = (props, children) => {
   return ['div', props, children]
 }
 
+// a custom tree
 const cluster = div( null,() => {
   
   return [
@@ -44,13 +44,14 @@ const cluster = div( null,() => {
         return div([
           tag('span', 'juana no es maria'),
           tag('hr'),
-          tag('span', 'juana no es maria2')
+          tag('span', 'juana no es maria3')
         ])
       })
     ])
   ]
 })
 
+// the basic tree
 const treeV1 = [
   cluster,
   ['div', ['div', [
