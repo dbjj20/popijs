@@ -1,4 +1,5 @@
 import path from "path";
+import { createHtmlFromArray, serverRender, treeV1 } from "./lib";
 
 function getHtmlTemplate(r, c){
 	return `
@@ -86,7 +87,9 @@ Bun.serve({
     const context = {TestComponent_STATE: {count: 0}}
     
     const ren = getHtmlTemplate('', JSON.stringify(context));
+  
+    const html = createHtmlFromArray(serverRender(treeV1))
     
-    return new Response(ren, {headers: { "Content-Type": "text/html" }})
+    return new Response(html, {headers: { "Content-Type": "text/html" }})
   }
 });

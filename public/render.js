@@ -7,13 +7,6 @@ const isFn = (fn) => {
   return typeof fn === "function"
 }
 
-const verifyProperties = (props) => {
-  if (isFn(props)){
-    return props()
-  }
-  props;
-}
-
 const isArr = (a) => Array.isArray(a)
 
 const testTagProperties = ['text', { popiJs: true }, [['click', testFn]]]
@@ -81,8 +74,8 @@ const cluster = () => div( null,() => {
         return div(props,[
           tag('span', 'juana no es maria'),
           tag('hr'),
-          tag('span', 'juana no es maria3'),
-          component()
+          tag('span', '<script>window.location.path</script>'),
+          component
         ])
       })
     ])
@@ -91,7 +84,7 @@ const cluster = () => div( null,() => {
 
 // the basic tree
 
-const treeV1 = [
+export const treeV1 = [
   cluster,
   ['div', ['div', [
     ['button', () => testTagProperties],
@@ -105,19 +98,19 @@ const treeV1 = [
 
 const verifyChildren = (children, element) => {
   if (typeof children !== "undefined" && typeof children === "object" && Array.isArray(children) && !Array.isArray(children[0])){
-    renderV1([children], element)
+    browserRender([children], element)
   }
   if (typeof children !== "undefined" && typeof children === "object" && Array.isArray(children) && Array.isArray(children[0])){
-    renderV1(children, element)
+    browserRender(children, element)
   }
 }
 
-function renderV1(tree, root = document.getElementById("root")){
+function browserRender(tree, root = document.getElementById("root")){
   const mainElement = document.createDocumentFragment()
   
   const provisional = []
   tree.forEach((treObj) => {
-    let [tagName, properties, children] = [1,2,3];
+    let [tagName, properties, children] = [1,2,3]; // place holder to avoid crash
     
     if (typeof treObj === 'function'){
        [tagName, properties, children] = treObj()
@@ -164,5 +157,5 @@ function renderV1(tree, root = document.getElementById("root")){
 }
 
 export default function init() {
-  renderV1(treeV1)
+  browserRender(treeV1)
 }
