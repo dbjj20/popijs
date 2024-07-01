@@ -19,10 +19,11 @@ function getHtmlTemplate(r, c){
 		</head>
 		
 		<body>
-		${ r }
     <button onclick="render()">render</button>
 		<p id="juan"></p>
-    <div id="root"></div>
+    <div id="root">
+    ${ r }
+    </div>
 		</body>
 		</html>
 		`
@@ -86,10 +87,9 @@ Bun.serve({
     
     const context = {TestComponent_STATE: {count: 0}}
     
-    const ren = getHtmlTemplate('', JSON.stringify(context));
-  
     const html = createHtmlFromArray(serverRender(treeV1))
+    const ren = getHtmlTemplate(html, JSON.stringify(context));
     
-    return new Response(html, {headers: { "Content-Type": "text/html" }})
+    return new Response(ren, {headers: { "Content-Type": "text/html" }})
   }
 });
