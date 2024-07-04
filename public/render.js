@@ -74,7 +74,7 @@ const cluster = () => div( null,() => {
         return div(props,[
           tag('span', 'juana no es maria'),
           tag('hr'),
-          tag('span', '<script>window.location.path</script>'),
+          tag('span', ''),
           component
         ])
       })
@@ -129,7 +129,18 @@ function browserRender(tree, root = document.getElementById("root")){
       const [str, props, events] = properties();
       element.innerText = str
       events.forEach(([eventName, fn]) => {
-        element.addEventListener(eventName, fn)
+        element.addEventListener(eventName, () => {
+          const pro = new Promise((resolve) => {
+            if (typeof fn()){
+              resolve()
+            }
+          })
+          pro.then(() => {
+            // execute re-render method
+            element.innerText = String(new Date())
+            console.log('executed after action', )
+          })
+        })
       })
     }
     
@@ -156,6 +167,19 @@ function browserRender(tree, root = document.getElementById("root")){
   root.appendChild(mainElement)
 }
 
+function bruteCleanElement(element){
+  // is this a "safe way" of cleaning an element?
+  if (!element){
+    return;
+  }
+  // debugger;
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+  return element;
+}
+
 export default function init() {
-  browserRender(treeV1)
+  const root = bruteCleanElement(document.getElementById("root"))
+  browserRender(treeV1, root)
 }
