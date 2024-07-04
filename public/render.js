@@ -40,8 +40,15 @@ const component = () => {
     console.log(state())
   }
   
-  const add = () => {
-    addState((pre) => pre + 1)
+  const add = (e) => {
+    // setInterval(() => {
+      addState((pre) => {
+        const res = pre + 1
+        e.innerText = `counter ${res}`
+        return res
+      })
+    // }, 300)
+    // this is crazy but works
   }
   
   return div([
@@ -131,13 +138,13 @@ function browserRender(tree, root = document.getElementById("root")){
       events.forEach(([eventName, fn]) => {
         element.addEventListener(eventName, () => {
           const pro = new Promise((resolve) => {
-            if (typeof fn()){
+            if (typeof fn(element)){
               resolve()
             }
           })
           pro.then(() => {
             // execute re-render method
-            element.innerText = String(new Date())
+            // element.innerText = String(new Date())
             console.log('executed after action', )
           })
         })
