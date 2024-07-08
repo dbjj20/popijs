@@ -19,7 +19,7 @@ function getHtmlTemplate(r, c){
 		</head>
 		
 		<body>
-    <button onclick="render()">render</button>
+    <button onclick="render()">Re-render</button>
 		<p id="juan"></p>
     <div id="root">
     ${ r }

@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "eslint": "^8.38.0",
+    "eslint": "8.22.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^8.8.0",
     "eslint-import-resolver-alias": "^1.1.2",
