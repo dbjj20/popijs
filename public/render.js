@@ -33,6 +33,7 @@ const div = (props, children) => {
 
 // a custom tree
 const component = () => {
+  const defaultProps = ['', { index: true }, []]
   const { onClick } = useEvent()
   const [state, addState] = tinyStore(0)
   
@@ -44,21 +45,23 @@ const component = () => {
     // setInterval(() => {
       addState((pre) => {
         const res = pre + 1
-        e.innerText = `counter ${res}`
+        // debugger;
+        // e.innerText = `counter ${res}`
         return res
       })
     // }, 300)
     // this is crazy but works
+    // debugger
+    return init(e, [returnStatement()])
   }
   
-  return div([
-    tag('button', () => ['add to counter',, [
-        onClick(add)
-    ]], [
-        tag('button', () => ['add to counter2',, [['click', add]]]) // this is crazy but works
-    ]),
+  const returnStatement = () => div(() => defaultProps, [
+    tag('button', () => [`add to counter ${state()}`,, [
+        onClick((e) => add(e))
+    ]]),
     tag('button', () => ['print counter',, [['click', print]]])
   ])
+  return returnStatement()
 }
 
 const HelloWorld = ({children, props}) => {
@@ -116,7 +119,9 @@ function browserRender(tree, root = document.getElementById("root")){
   const mainElement = document.createDocumentFragment()
   
   const provisional = []
+  // debugger;
   tree.forEach((treObj) => {
+    // debugger;
     let [tagName, properties, children] = [1,2,3]; // place holder to avoid crash
     
     if (typeof treObj === 'function'){
@@ -134,17 +139,21 @@ function browserRender(tree, root = document.getElementById("root")){
     
     if (isFn(properties)){
       const [str, props, events] = properties();
-      element.innerText = str
+      if (props?.index){
+        element.isIndexParent = true
+      }
+      element.innerText = str // valid innerText action
       events.forEach(([eventName, fn]) => {
         element.addEventListener(eventName, () => {
           const pro = new Promise((resolve) => {
-            if (typeof fn(element)){
-              resolve()
+            if (typeof fn(element, eventName)){
+              resolve('camilo')
             }
           })
-          pro.then(() => {
-            // execute re-render method
+          pro.then((res) => {
             // element.innerText = String(new Date())
+            // debugger
+            // res wil be 'camilo'
             console.log('executed after action', )
           })
         })
@@ -167,10 +176,11 @@ function browserRender(tree, root = document.getElementById("root")){
     provisional.push(element)
   })
   
+  // debugger
   provisional.forEach((el) => {
     mainElement.appendChild(el)
   })
-  
+  // debugger
   root.appendChild(mainElement)
 }
 
@@ -186,7 +196,26 @@ function bruteCleanElement(element){
   return element;
 }
 
-export default function init() {
+function bruteRemoveElement(element){
+  // is this a "safe way" of cleaning an element?
+  if (!element){
+    return;
+  }
+  let parent = element.parentElement
+  while(element?.isIndexParent){
+    debugger
+    parent = parent.parentElement
+  }
+  
+  element.remove();
+  return bruteCleanElement(parent)
+}
+
+export default function init(el, children) {
+  if (isArr(children) && children){
+    const root = bruteRemoveElement(el)
+    return browserRender(children, root)
+  }
   const root = bruteCleanElement(document.getElementById("root"))
   browserRender(treeV1, root)
 }
