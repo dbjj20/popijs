@@ -1,8 +1,9 @@
+/* eslint-disable no-undef,default-case */
 import path from "path";
 import { createHtmlFromArray, serverRender, treeV1 } from "./lib";
 
-function getHtmlTemplate(r, c){
-	return `
+function getHtmlTemplate(r, c) {
+  return `
 		<!DOCTYPE html>
 		<html lang="en">
 		<head>
@@ -13,8 +14,10 @@ function getHtmlTemplate(r, c){
     </script>
     <script type="module">
       import render from '/public/render.js'
+      import renderV2 from '/public/renderv2.js'
       window.render = render
       render()
+      renderV2()
     </script>
 		</head>
 		
@@ -22,31 +25,33 @@ function getHtmlTemplate(r, c){
     <button onclick="render()">Re-render</button>
 		<p id="juan"></p>
     <div id="root">
-    ${ r }
+    ${r}
     </div>
 		</body>
 		</html>
-		`
+		`;
 }
 
-const port = Bun.env.POPI_PORT || 4321
+const port = Bun.env.POPI_PORT || 4321;
 
 Bun.serve({
   port,
   error: () => {
     return new Response(undefined, { status: 500 });
   },
-  fetch: async ( req, server ) => {
-  
+  fetch: async (req, server) => {
     const url = new URL(req.url);
     console.log(url.href);
-    const whiteListPaths = ['public'];
+    const whiteListPaths = ["public"];
     if (whiteListPaths.some((url) => req.url.includes(url))) {
       const ext = path.extname(req.url);
       if (ext) {
         const { pathname } = new URL(req.url);
-        
-        const filePath = path.join(import.meta.dir, pathname.includes("?") ? pathname.split("?")[0] : pathname);
+
+        const filePath = path.join(
+          import.meta.dir,
+          pathname.includes("?") ? pathname.split("?")[0] : pathname
+        );
         if (filePath) {
           console.log(filePath);
           try {
@@ -76,20 +81,22 @@ Bun.serve({
                 contentType = "font/woff"; // Establecer el tipo de contenido para archivos woff
                 break;
             }
-          
-            return new Response(await fileData.stream(), { headers: { "Content-Type": contentType } });
+
+            return new Response(await fileData.stream(), {
+              headers: { "Content-Type": contentType },
+            });
           } catch (e) {
             // continue render
           }
         }
       }
     }
-    
-    const context = {TestComponent_STATE: {count: 0}}
-    
-    const html = createHtmlFromArray(serverRender(treeV1))
+
+    const context = { TestComponent_STATE: { count: 0 } };
+
+    const html = createHtmlFromArray(serverRender(treeV1));
     const ren = getHtmlTemplate(html, JSON.stringify(context));
-    
-    return new Response(ren, {headers: { "Content-Type": "text/html" }})
-  }
+
+    return new Response(ren, { headers: { "Content-Type": "text/html" } });
+  },
 });
