@@ -135,17 +135,17 @@ function bruteRemoveElement(element) {
   if (!element) {
     return;
   }
-  let parent = element.parentElement;
-  while (element?.isIndexParent) {
-    parent = parent.parentElement;
+  const parent = element.parentElement;
+  // debugger
+  if (parent) {
+    element.remove();
+    return parent;
   }
-
-  element.remove();
-  return bruteCleanElement(parent);
+  return document.createDocumentFragment();
 }
 
 export default function init(el, children) {
-  if (isArr(children) && children) {
+  if (children && isArr(children) && children[0]) {
     const root = bruteRemoveElement(el);
     return browserRender(children, root);
   }

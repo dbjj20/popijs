@@ -34,7 +34,12 @@ const div = (propsOrChildren, children, callback) => {
 const [state, addState] = tinyStore(0);
 const [colorState, setColor] = tinyStore("blue");
 const component = (props) => {
-  const colorList = ["red", "yellow", "black", "white", "magenta", "blue"];
+  const colorList = [
+    "red", "yellow", "white", "magenta", "blue",
+    "green", "orange", "purple", "pink", "brown", "gray",
+    "cyan", "lime", "navy", "teal", "maroon", "olive",
+    "silver", "gold", "indigo", "violet", "beige", "turquoise"
+  ];
   let mainEl;
   const { onClick } = useEvent();
   const defaultProps = ["", { index: true }, []];
@@ -55,11 +60,12 @@ const component = (props) => {
       }
       return result;
     });
-    init(e, [returnStatement()]);
+    init(mainEl, [returnStatement()]);
     // this is crazy but works
     // debugger
     props.setParentState(); // set parent state
   };
+  props.setParentState();
 
   const decrement = (e) => {
     addState((pre) => {
@@ -69,11 +75,33 @@ const component = (props) => {
       }
       return result;
     });
-    // debugger;
-    init(e, [returnStatement()]);
+    init(mainEl, [returnStatement()]);
     // this is crazy but works
     // debugger
   };
+
+  (() => {
+    // effect function?
+    setInterval(() => {
+      addState((pre) => {
+        const result = pre + 1;
+        if (colorList[result]) {
+          setColor(colorList[result]);
+        }
+        if (!colorList[result]) {
+          setColor(colorList[0]);
+          return 0;
+        }
+        return result;
+      });
+      // console.log('klk')
+      if (mainEl) {
+        // debugger
+        init(mainEl, [returnStatement()]);
+      }
+      // this works but if run more than one time then this gets bad
+    }, 100);
+  })();
 
   const returnStatement = () => {
     const color = colorState();
@@ -83,7 +111,7 @@ const component = (props) => {
         tag("p", tag("t", `${state()}`)),
         tag("button", () => [
           "increment",
-          { popiJs: true, className: "cssclass", style: { color } },
+          { popiJs: true, className: "cssclass", style: { background: color } },
           [onClick((e) => add(e))],
         ]),
         tag("button", () => ["decrement", , [onClick((e) => decrement(e))]]),
