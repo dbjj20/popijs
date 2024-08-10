@@ -1,6 +1,7 @@
 /* eslint-disable no-undef,default-case */
 import path from "path";
-import { createHtmlFromArray, serverRender, treeV1 } from "./lib";
+import { createHtmlFromArray, serverRender } from "./lib";
+import { treeV1 } from "./public/tree";
 
 function getHtmlTemplate(r, c) {
   return `
@@ -8,21 +9,36 @@ function getHtmlTemplate(r, c) {
 		<html lang="en">
 		<head>
 		<title>popijs</title>
+		<style>
+
+		/*body {*/
+    /*  background-color: lightblue;*/
+    /*}*/
+    
+    /*h1 {*/
+    /*  color: white;*/
+    /*  text-align: center;*/
+    /*}*/
+    
+    /*p {*/
+    /*  font-family: verdana;*/
+    /*  font-size: 20px;*/
+    /*}*/
+    </style>
     <script type="module">
       import tinyStore from '/public/tinyStore.js'
-      window.tinyStore = tinyStore
-    </script>
-    <script type="module">
+      import { treeV1 } from '/public/tree.js'
       import render from '/public/render.js'
-      import renderV2 from '/public/renderv2.js'
+      window.tinyStore = tinyStore
+      window.treeV1 = treeV1
       window.render = render
-      render()
-      renderV2()
+      render(treeV1)
     </script>
+   
 		</head>
 		
 		<body>
-    <button onclick="render()">Re-render</button>
+    <button onclick="render(treeV1)">Re-render</button>
 		<p id="juan"></p>
     <div id="root">
     ${r}

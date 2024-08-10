@@ -30,8 +30,19 @@ const tinyStore = (initialState, name = "") => {
       logState(tinyStoreState);
       return;
     }
-    if (!Array.isArray(propsOrSetter) && typeof propsOrSetter !== "function") {
+    if (
+      !Array.isArray(propsOrSetter) &&
+      typeof propsOrSetter !== "function" &&
+      (typeof propsOrSetter !== "string" || typeof propsOrSetter !== "number")
+    ) {
       tinyStoreState = copyObj({ ...tinyStoreState, ...propsOrSetter });
+      logState(tinyStoreState);
+    }
+    if (
+      typeof propsOrSetter === "string" ||
+      typeof propsOrSetter === "number"
+    ) {
+      tinyStoreState = copyObj(propsOrSetter);
       logState(tinyStoreState);
     }
   };
