@@ -31,6 +31,9 @@ function branch(options) {
   if (typeof properties !== "undefined" && typeof properties === "string") {
     element.innerText = properties;
   }
+  if (typeof children !== "undefined" && typeof children === "string") {
+    element.innerText = children;
+  }
 
   if (isFn(properties)) {
     const [str, props, events] = properties();
@@ -56,29 +59,31 @@ function branch(options) {
     element.innerText = str; // valid innerText action
 
     // add event listeners
-    events.forEach(([eventName, fn]) => {
-      element.addEventListener(eventName, () => {
-        const pro = new Promise((resolve) => {
-          if (typeof fn(element, eventName)) {
-            resolve("camilo");
-          }
-        });
-        pro.then((res) => {
-          // element.innerText = String(new Date())
-          // debugger
-          // res wil be 'camilo'
-          // window.render(); // provitional re-rendering
-          console.log("executed after action");
+    if (Array.isArray(events) && events[0]){
+      events.forEach(([eventName, fn]) => {
+        element.addEventListener(eventName, () => {
+          const pro = new Promise((resolve) => {
+            if (typeof fn(element, eventName)) {
+              resolve("camilo");
+            }
+          });
+          pro.then((res) => {
+            // element.innerText = String(new Date())
+            // debugger
+            // res wil be 'camilo'
+            // window.render(); // provitional re-rendering
+            console.log("executed after action");
+          });
         });
       });
-    });
+    }
   }
 
   if (properties) {
     verifyChildren(properties, element);
   }
 
-  if (children) {
+  if (typeof children !== "undefined" && typeof children !== "string") {
     let p = children;
     if (isFn(children)) {
       // we can pass default props to any child

@@ -1,6 +1,7 @@
 /* eslint-disable no-sparse-arrays,react-hooks/rules-of-hooks */
 import init from "./render.js";
 import tinyStore from "./tinyStore.js";
+import effect from "./effect.js";
 
 // the basics
 
@@ -31,27 +32,45 @@ const div = (propsOrChildren, children, callback) => {
 };
 
 // a custom tree
-const [state, addState] = tinyStore(0);
-const [colorState, setColor] = tinyStore("blue");
 const component = (props) => {
+  const [state, addState] = tinyStore(0);
+  const [colorState, setColor] = tinyStore("blue");
+  const [colorEffect] = effect();
   const colorList = [
-    "red", "yellow", "white", "magenta", "blue",
-    "green", "orange", "purple", "pink", "brown", "gray",
-    "cyan", "lime", "navy", "teal", "maroon", "olive",
-    "silver", "gold", "indigo", "violet", "beige", "turquoise"
+    "red",
+    "yellow",
+    "white",
+    "magenta",
+    "green",
+    "orange",
+    "purple",
+    "pink",
+    "brown",
+    "gray",
+    "cyan",
+    "lime",
+    "teal",
+    "maroon",
+    "olive",
+    "silver",
+    "gold",
+    "indigo",
+    "violet",
+    "beige",
+    "turquoise",
   ];
   let mainEl;
   const { onClick } = useEvent();
   const defaultProps = ["", { index: true }, []];
 
   const print = () => {
-    console.log(state());
+    // console.log(state());
   };
 
   const add = (e) => {
-    console.log(props);
-    console.log(props.propFunc());
-    console.log(mainEl, e);
+    // console.log(props);
+    // console.log(props.propFunc());
+    // console.log(mainEl, e);
     // debugger;
     addState((pre) => {
       const result = pre + 1;
@@ -80,35 +99,62 @@ const component = (props) => {
     // debugger
   };
 
-  (() => {
-    // effect function?
-    setInterval(() => {
-      addState((pre) => {
-        const result = pre + 1;
-        if (colorList[result]) {
-          setColor(colorList[result]);
-        }
-        if (!colorList[result]) {
-          setColor(colorList[0]);
-          return 0;
-        }
-        return result;
-      });
-      // console.log('klk')
-      if (mainEl) {
-        // debugger
-        init(mainEl, [returnStatement()]);
-      }
-      // this works but if run more than one time then this gets bad
-    }, 100);
-  })();
-
+  // (() => {
+  //   // effect function?
+  //   setInterval(() => {
+  //     addState((pre) => {
+  //       const result = pre + 1;
+  //       if (colorList[result]) {
+  //         setColor(colorList[result]);
+  //       }
+  //       if (!colorList[result]) {
+  //         setColor(colorList[0]);
+  //         return 0;
+  //       }
+  //       return result;
+  //     });
+  //     // console.log('klk')
+  //     if (mainEl) {
+  //       // debugger
+  //       init(mainEl, [returnStatement()]);
+  //     }
+  //     // this works but if run more than one time then this gets bad
+  //   }, 500);
+  // })();
   const returnStatement = () => {
     const color = colorState();
+    colorEffect(() => {
+      setTimeout(() => {
+        console.log("executing effect");
+        addState((pre) => {
+          const result = pre + 1;
+          if (colorList[result]) {
+            setColor(colorList[result]);
+          }
+          if (!colorList[result]) {
+            setColor(colorList[0]);
+            return 0;
+          }
+          return result;
+        });
+        // console.log('klk')
+        if (mainEl) {
+          // debugger
+          init(mainEl, [returnStatement()]);
+        }
+      }, 10);
+    }, [color]);
+
+    const compo = tag("span", () => [
+      "colorized el",
+      { style: { background: color } },
+    ]);
+
+    // debugger;
     return div(
       () => defaultProps,
       [
-        tag("p", tag("t", `${state()}`)),
+        tag("p", compo),
         tag("button", () => [
           "increment",
           { popiJs: true, className: "cssclass", style: { background: color } },
@@ -149,7 +195,7 @@ const cluster = () =>
           // debugger
           // props here is the default prop in the render
           const propFunc = () => {
-            return state();
+            return parentState();
           };
           const setParentState = (e) => {
             addParentState((p) => {
