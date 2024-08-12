@@ -142,7 +142,7 @@ const component = (props) => {
           // debugger
           init(mainEl, [returnStatement()]);
         }
-      }, 10);
+      }, 500);
     }, [color]);
 
     const compo = tag("span", () => [

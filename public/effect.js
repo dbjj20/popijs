@@ -57,16 +57,28 @@ function effect(func, arr, old, callback) {
 
 const effectV2 = (options = optionsDefinition) => {
   let tinyStoreState;
+  let interFunc;
 
   const setEffect = (func, arr) => {
     if (typeof func === "function") {
+      interFunc = func;
       effect(func, arr, tinyStoreState, (deps) => {
         tinyStoreState = deps;
       });
     }
   };
 
-  return [setEffect];
+  const execute = () => {
+    try {
+      if (typeof interFunc === "function") {
+        interFunc();
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  return [setEffect, execute];
 };
 
 export default effectV2;
