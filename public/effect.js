@@ -46,6 +46,9 @@ function compare(a, b) {
 
 function effect(func, arr, old, callback) {
   if (typeof func === "function") {
+    if (typeof arr === "undefined") {
+      return func();
+    }
     callback(arr);
     const res = compare(arr, old);
     if (res) {
@@ -68,10 +71,17 @@ const effectV2 = (options = optionsDefinition) => {
     }
   };
 
-  const execute = () => {
+  const execute = (arr, el) => {
     try {
       if (typeof interFunc === "function") {
-        interFunc();
+        const res = compare(arr, tinyStoreState);
+        if (res) {
+          return;
+        }
+        const result = interFunc();
+        if (typeof result === "function" && !el) {
+          result();
+        }
       }
     } catch (e) {
       console.warn(e);

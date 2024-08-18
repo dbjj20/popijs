@@ -10,20 +10,18 @@ function getHtmlTemplate(r, c) {
 		<head>
 		<title>popijs</title>
 		<style>
-
-		/*body {*/
-    /*  background-color: lightblue;*/
-    /*}*/
-    
-    /*h1 {*/
-    /*  color: white;*/
-    /*  text-align: center;*/
-    /*}*/
-    
-    /*p {*/
-    /*  font-family: verdana;*/
-    /*  font-size: 20px;*/
-    /*}*/
+      .container {
+        margin: 0;
+        padding-top: 10vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+      }
+      .row {
+        display: flex;
+        justify-content: center;
+      }
     </style>
     <script type="module">
       import tinyStore from '/public/tinyStore.js'
@@ -91,10 +89,10 @@ Bun.serve({
                 contentType = "image/jpeg";
                 break;
               case ".woff2":
-                contentType = "font/woff2"; // Establecer el tipo de contenido para archivos woff2
+                contentType = "font/woff2";
                 break;
               case ".woff":
-                contentType = "font/woff"; // Establecer el tipo de contenido para archivos woff
+                contentType = "font/woff";
                 break;
             }
 
