@@ -330,7 +330,19 @@ const Game = () => {
     const grid = state();
     // debugger;
     return div(
-      () => ["", { className: "container" }],
+      () => [
+        "",
+        {
+          style: {
+            margin: 0,
+            paddingTop: "10vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            textAlign: "center",
+          },
+        },
+      ],
       [
         tag("h1", "Life game"),
         ...grid.map((row, i) => {
@@ -386,16 +398,27 @@ const ExampleForm = () => {
     email: "",
     password: "",
   });
-  
+
   rs = () => {
     return div([
-    
-    ])
-  }
-}
+      tag("h1", "form head"),
+      tag("form", [
+        tag("label", "name"),
+        tag("input"),
+        tag("label", "email"),
+        tag("input"),
+        tag("label", "password"),
+        tag("input"),
+        tag("button", "submit"),
+      ]),
+    ]);
+  };
+  return rs();
+};
 
 export const treeV1 = [
   ...manyClusters,
   HelloWorld({ children: cluster }),
   Game(),
+  ExampleForm(),
 ];
