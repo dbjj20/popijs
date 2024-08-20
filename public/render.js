@@ -26,14 +26,29 @@ const verifyChildren = (children, element) => {
 function branch(options) {
   const { tagName, properties, children, provisional, callback, root } =
     options;
-  const element = document.createElement(tagName);
-  // setElement(element);
+  // element build
+  let element;
+  if (!tagName) {
+    element = document.createDocumentFragment();
+  }
+
+  if (tagName && tagName === "fragment") {
+    element = document.createDocumentFragment();
+  }
+
+  if (tagName && tagName !== "fragment") {
+    element = document.createElement(tagName);
+  }
+
+  // element text assigment
   if (typeof properties !== "undefined" && typeof properties === "string") {
-    element.innerText = properties;
+    element.innerText = String(properties);
   }
   if (typeof children !== "undefined" && typeof children === "string") {
-    element.innerText = children;
+    element.innerText = String(children);
   }
+
+  // props assigment
 
   if (isFn(properties)) {
     const [str, props, events] = properties();
@@ -56,22 +71,22 @@ function branch(options) {
       }
     }
     // apply raw text
-    element.innerText = str; // valid innerText action
+    element.innerText = String(str); // todo: validate innerText text
 
     // add event listeners
-    if (Array.isArray(events) && events[0]){
+    if (Array.isArray(events) && events[0]) {
       events.forEach(([eventName, fn]) => {
         element.addEventListener(eventName, () => {
-          const pro = new Promise((resolve) => {
+          const promise = new Promise((resolve) => {
             if (typeof fn(element, eventName)) {
               resolve("camilo");
             }
           });
-          pro.then((res) => {
+          promise.then((res) => {
             // element.innerText = String(new Date())
             // debugger
             // res wil be 'camilo'
-            // window.render(); // provitional re-rendering
+            // window.render(); // provitional auto re-rendering
             console.log("executed after action");
           });
         });
