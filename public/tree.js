@@ -15,7 +15,9 @@ import effect from "./effect.js";
 const event = () => {
   // this is just an event definition table ... etc...
   return {
-    click: (e) => ["click", e],
+    click: (fn) => ["click", fn],
+    submit: (fn) => ["submit", fn],
+    input: (fn) => ["input", fn],
   };
 };
 
@@ -152,8 +154,8 @@ const component = (props) => {
         // do not mix re-renders with events re-renders
         // it causes timeout to sum and execute at the same time
       }
-    }, 500);
-  }, [colorState()]);
+    }, 700);
+  });
 
   returnStatement = () => {
     const color = colorState();
@@ -172,9 +174,9 @@ const component = (props) => {
         tag("button", () => [
           "increment",
           { popiJs: true, className: "cssclass", style: { background: color } },
-          [click((e) => add(e))],
+          [click((ev, e) => add(e))],
         ]),
-        tag("button", () => ["decrement", , [click((e) => decrement(e))]]),
+        tag("button", () => ["decrement", , [click((ev, e) => decrement(e))]]),
         tag("p", [
           tag("li", [
             tag("span", () => [`${new Date()}`, , [["click", print]]]),
@@ -226,20 +228,6 @@ const cluster = () =>
             // window.render(); // provisional re-rendering
           };
 
-          // (() => {
-          //   setTimeout(() => {
-          //     addParentState((p) => {
-          //       return {
-          //         ...p,
-          //         showDate: new Date(),
-          //       };
-          //     });
-          //     // console.log('klk')
-          //     window.render();
-          // this works but if run more than one time then this gets bad
-          //   }, 500);
-          // })();
-
           const returnStatement = () =>
             div(props, [
               tag("h4", `state of parent ${JSON.stringify(parentState())}`),
@@ -266,11 +254,11 @@ export const manyClusters = [];
 const Game = () => {
   let mainEl;
   let returnStatement;
-  // const rows = 100;
+  // const rows = 200;
   // const cols = 400;
   const rows = 60;
   const cols = 100;
-  const pxSize = 4;
+  const pxSize = 10;
   const initial = () =>
     Array.from({ length: rows }, () =>
       Array.from({ length: cols }, () => Math.round(Math.random()))
@@ -281,10 +269,10 @@ const Game = () => {
   function updateGrid() {
     const grid = state();
     let counter = 0;
-    // const newGrid = Array.from({ length: rows }, () =>
-    //   Array.from({ length: cols }, () => 0)
-    // );
-    const newGrid = grid;
+    const newGrid = Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => 0)
+    );
+    // const newGrid = grid;
     // debugger
     // Recorrer cada célula en la cuadrícula
     for (let i = 0; i < rows; i += 1) {
@@ -382,7 +370,7 @@ const Game = () => {
         setTimeout(() => {
           updateGrid();
           // init(mainEl, [returnStatement()]);
-        }, 100);
+        }, 10);
       }
     );
   };
@@ -391,27 +379,114 @@ const Game = () => {
 };
 
 const ExampleForm = () => {
+  const { submit, input } = event();
   let mainEl;
   let rs; // returnStatement
   const [formState, setFormState] = tinyStore({
-    name: "",
-    email: "",
-    password: "",
+    name: "name of the user",
+    email: "example@ex.com",
+    password: "strong pass",
   });
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    setFormState((prev) => ({ ...prev, ...data }));
+    console.log(formState());
+    console.log("do async action with data");
+    init(mainEl, [rs()]);
+  };
+
+  const handleChange = (e, el) => {
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+    init(mainEl, [rs()]);
+    // this has a re-rendering problem, input looses focus
+    // because the core render removes and the add a new element
+  };
+
   rs = () => {
-    return div([
-      tag("h1", "form head"),
-      tag("form", [
-        tag("label", "name"),
-        tag("input"),
-        tag("label", "email"),
-        tag("input"),
-        tag("label", "password"),
-        tag("input"),
-        tag("button", "submit"),
-      ]),
-    ]);
+    console.log(formState());
+    const { name, email, password } = formState();
+    return div(
+      () => [""],
+      [
+        tag("h1", "form head"),
+        fragment([
+          tag("form", () => ["", {}, [submit(handleSubmit)]], [
+            tag("label", "name", [
+              tag("input", () => [
+                ,
+                {
+                  name: "name",
+                  value: name,
+                },
+                [input(handleChange)],
+              ]),
+            ]),
+            tag("label", "email", [
+              tag("input", () => [
+                ,
+                {
+                  name: "email",
+                  value: email,
+                },
+                [input(handleChange)],
+              ]),
+            ]),
+            tag("label", "password", [
+              tag("input", () => [
+                ,
+                {
+                  name: "password",
+                  value: password,
+                },
+                [input(handleChange)],
+              ]),
+            ]),
+            tag("button", () => ["Submit", { type: "submit" }]),
+          ]),
+        ]),
+        div([
+          tag("h3", `${name}`),
+          tag("h3", `${email}`),
+          tag("h3", `${password}`),
+        ]),
+      ],
+      (main) => {
+        mainEl = main;
+      }
+    );
+  };
+  return rs();
+};
+
+const formito = () => {
+  let mainEl;
+  const { input } = event();
+  const [formState, setFormState] = tinyStore({
+    name: "name of the user",
+  });
+  let rs;
+  const handleChange = (e, el) => {
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+    init(mainEl, [rs()]);
+    // this has a re-rendering problem, input looses focus
+    // because the core render removes the element and then adds a new element
+  };
+  rs = () => {
+    const { name } = formState();
+    return div(
+      () => [""],
+      [
+        tag("input", () => [,{ name: "name",value: name }, [input(handleChange)]]),
+        tag("p", `${name}`),
+      ],
+      (main) => {
+        mainEl = main;
+      }
+    );
   };
   return rs();
 };
@@ -419,6 +494,7 @@ const ExampleForm = () => {
 export const treeV1 = [
   ...manyClusters,
   HelloWorld({ children: cluster }),
-  Game(),
+  // Game(),
   ExampleForm(),
+  formito(),
 ];

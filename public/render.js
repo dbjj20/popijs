@@ -2,7 +2,7 @@ const isFn = (fn) => {
   return typeof fn === "function";
 };
 
-const isArr = (a) => Array.isArray(a);
+const isArr = (a) => Array.isArray(a) && a[0];
 
 const verifyChildren = (children, element) => {
   if (
@@ -69,6 +69,16 @@ function branch(options) {
           });
         }
       }
+      const excludeList = ["style", "className"];
+      const propKeys = Object.keys(props);
+      if (propKeys[0]) {
+        propKeys.forEach((name) => {
+          if (excludeList.includes(name)) {
+            return;
+          }
+          element[name] = props[name];
+        });
+      }
     }
     // apply raw text
     element.innerText = String(str); // todo: validate innerText text
@@ -76,9 +86,16 @@ function branch(options) {
     // add event listeners
     if (Array.isArray(events) && events[0]) {
       events.forEach(([eventName, fn]) => {
-        element.addEventListener(eventName, () => {
+        element.addEventListener(eventName, (event) => {
+          // const elName = element.tagName;
           const promise = new Promise((resolve) => {
-            if (typeof fn(element, eventName)) {
+            // if (elName === "INPUT") {
+            //   element.preventDefault();
+            // }
+            // if (elName === "FORM") {
+            //   element.preventDefault();
+            // }
+            if (typeof fn(event, element)) {
               resolve("camilo");
             }
           });
@@ -119,23 +136,29 @@ function browserRender(tree, root = document.getElementById("root")) {
 
   const provisional = [];
   // debugger
-  tree.forEach((treObj) => {
-    if (typeof treObj === "function") {
-      const [tagName, properties, children, callback] = treObj();
-      branch({ tagName, properties, children, provisional, callback, root });
-    }
-    if (isArr(treObj)) {
-      const [tagName, properties, children, callback] = treObj;
-      branch({ tagName, properties, children, provisional, callback, root });
-    }
-  });
+  if (isArr(tree)) {
+    tree.forEach((treObj) => {
+      if (typeof treObj === "function") {
+        const [tagName, properties, children, callback] = treObj();
+        branch({ tagName, properties, children, provisional, callback, root });
+      }
+      if (isArr(treObj)) {
+        const [tagName, properties, children, callback] = treObj;
+        branch({ tagName, properties, children, provisional, callback, root });
+      }
+    });
+  }
 
   // debugger
-  provisional.forEach((el) => {
-    mainElement.appendChild(el);
-  });
-  // debugger
+  if (isArr(provisional)) {
+    provisional.forEach((el) => {
+      mainElement.appendChild(el);
+    });
+  }
+  // childNodes is not an array, see https://developer.mozilla.org/en-US/docs/Web/API/NodeList
+  // if (isArr(mainElement.childNodes)) {
   root.appendChild(mainElement);
+  // }
 }
 
 function bruteCleanElement(element) {
