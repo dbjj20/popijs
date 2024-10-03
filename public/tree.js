@@ -1,5 +1,13 @@
 /* eslint-disable no-sparse-arrays,react-hooks/rules-of-hooks */
-import init from "./render.js";
+import init, {
+  updateEl,
+  tag,
+  div,
+  fragment,
+  randomString,
+  event,
+  elementTracker,
+} from "./render.js";
 import tinyStore from "./tinyStore.js";
 import effect from "./effect.js";
 
@@ -11,32 +19,6 @@ import effect from "./effect.js";
 //
 // const testTagProperties = ["text", { popiJs: true }, [["click", testFn]]];
 // const testTagProperties1 = ["yay!", { popiJs: true }, [["click", testFn1]]];
-
-const event = () => {
-  // this is just an event definition table ... etc...
-  return {
-    click: (fn) => ["click", fn],
-    submit: (fn) => ["submit", fn],
-    input: (fn) => ["input", fn],
-  };
-};
-
-const tag = (tagName, propsOrChildren, children, callback) => {
-  if (!tagName) {
-    return [];
-  }
-  // debugger
-  return [tagName, propsOrChildren, children, callback];
-};
-
-const fragment = (propsOrChildren, children, callback) => {
-  return tag("fragment", propsOrChildren, children, callback);
-};
-
-const div = (propsOrChildren, children, callback) => {
-  // return ["div", props, children];
-  return tag("div", propsOrChildren, children, callback);
-};
 
 // a custom tree
 const component = (props) => {
@@ -258,7 +240,7 @@ const Game = () => {
   // const cols = 400;
   const rows = 60;
   const cols = 100;
-  const pxSize = 10;
+  const pxSize = 4;
   const initial = () =>
     Array.from({ length: rows }, () =>
       Array.from({ length: cols }, () => Math.round(Math.random()))
@@ -369,7 +351,7 @@ const Game = () => {
         mainEl = el;
         setTimeout(() => {
           updateGrid();
-          // init(mainEl, [returnStatement()]);
+          init(mainEl, [returnStatement()]);
         }, 10);
       }
     );
@@ -462,33 +444,47 @@ const ExampleForm = () => {
 };
 
 const formito = () => {
+  const [domState, setDom] = tinyStore({});
+  // since the component executes once we can add vars that wont change it's value during the life cycle of the component
+  const mainId = randomString();
   let mainEl;
+
   const { input } = event();
   const [formState, setFormState] = tinyStore({
     name: "name of the user",
   });
-  let rs;
   const handleChange = (e, el) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
-    init(mainEl, [rs()]);
+    // init(mainEl, [rs()]);
+    // debugger;
+    // updateEl(mainEl, rs());
     // this has a re-rendering problem, input looses focus
     // because the core render removes the element and then adds a new element
   };
-  rs = () => {
+
+  const showInputValue = () => {
+    const { name } = formState();
+    return tag("p", `${name}`);
+  };
+
+  return () => {
     const { name } = formState();
     return div(
       () => [""],
       [
-        tag("input", () => [,{ name: "name",value: name }, [input(handleChange)]]),
-        tag("p", `${name}`),
+        showInputValue(),
+        tag("input", () => [
+          ,
+          { name: "name", value: name },
+          [input(handleChange)],
+        ]),
       ],
       (main) => {
         mainEl = main;
       }
     );
   };
-  return rs();
 };
 
 export const treeV1 = [
@@ -498,3 +494,9 @@ export const treeV1 = [
   ExampleForm(),
   formito(),
 ];
+
+// how update should work
+
+// ['div', [['p', 'klk'], ['p', 'klk'], ['input']]]
+// if the input is re-rendered then we loos focus
+// the actual update should render if tag is not input or focus targeted
