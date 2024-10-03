@@ -233,7 +233,7 @@ function branch(options) {
             // }
             if (typeof fn(event, element)) {
               resolve("camilo");
-              debugger
+              // debugger
               console.log(properties);
             }
           });
