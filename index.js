@@ -27,15 +27,15 @@ function getHtmlTemplate(r, c) {
       import tinyStore from '/public/tinyStore.js'
       import { treeV1 } from '/public/tree.js'
       import render from '/public/render.js'
-      // import {renderV2} from '/public/renderv2.js'
-      // import {basicRender} from '/public/lab.js'
+      import {renderV2} from '/public/renderv2.js'
+      
       window.tinyStore = tinyStore
       window.treeV1 = treeV1
       window.render = render
       // window.renderV2 = renderV2
       render(treeV1)
       
-      // renderV2()
+      renderV2()
       
       
       // basicRender()

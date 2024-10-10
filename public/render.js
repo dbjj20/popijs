@@ -178,7 +178,7 @@ function branch(options) {
     }
   }
   if (typeof setInnerElement === "function") {
-    console.log("setting");
+    // console.log("setting");
     setInnerElement({ el: element });
   }
 

@@ -1,8 +1,15 @@
-const tinyStore = (initialState, name = "") => {
+const tinyStore = (initialState, options = { name: "", isStateOnly: true }) => {
+  const { name, isStateOnly } = options;
   let tinyStoreState = initialState;
 
   const copyObj = (obj) => {
-    return JSON.parse(JSON.stringify(obj));
+    if (isStateOnly) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+    if (Array.isArray(obj)) {
+      return [...obj];
+    }
+    return { ...obj };
   };
 
   const getProps = () => {
