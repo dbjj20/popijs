@@ -56,4 +56,35 @@ const tinyStore = (initialState, options = { name: "", isStateOnly: true }) => {
 
   return [getProps, setProps];
 };
+
+export const treeSaver = (initialState) => {
+  let tinyStoreState = initialState;
+  const copyObj = (obj) => {
+    // if (isStateOnly) {
+    // return JSON.parse(JSON.stringify(obj));
+    // }
+    // if (Array.isArray(obj)) {
+    //   return [...obj];
+    // }
+    return { ...obj };
+  };
+
+  const getProps = () => {
+    return copyObj(tinyStoreState);
+  };
+
+  const setProps = (propsOrSetter) => {
+    if (typeof propsOrSetter === "function") {
+      tinyStoreState = copyObj(propsOrSetter(tinyStoreState));
+
+      return;
+    }
+    if (!Array.isArray(propsOrSetter) && typeof propsOrSetter !== "function") {
+      tinyStoreState = copyObj(propsOrSetter);
+    }
+  };
+
+  return [getProps, setProps];
+};
+
 export default tinyStore;

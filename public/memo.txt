@@ -1,0 +1,264 @@
+import tinyStore, { treeSaver } from "./tinyStore.js";
+
+// a decentralized rendering arch
+let counter = -1;
+
+const sequentialId = () => {
+  counter += 1;
+  return counter;
+};
+
+const propsDefinition = {
+  className: "", // some class name
+  text: null, // some text
+  events: {},
+  styles: {},
+  tagDomProps: {},
+  children: [],
+};
+
+// define c_v_node? => compound virtual node
+const createCompoundVirtualNode = (tagName, props = propsDefinition) => {
+  const id = sequentialId();
+  if (tagName && tagName !== "fragment") {
+    return {
+      id,
+      [id]: {
+        id,
+        elementProperties: { ...props },
+        node: document.createElement(tagName),
+      },
+    };
+  }
+  const fragment = {
+    id,
+    [id]: {
+      id,
+      isFragment: true, // explicit key/value for later check
+      elementProperties: { ...props },
+      node: document.createDocumentFragment(),
+    },
+  };
+  // why? because yes :D
+  if (tagName && tagName === "fragment") {
+    return fragment;
+  }
+
+  return fragment;
+};
+
+const createElement = (tagName, props) => {
+  // this is to keep consistency
+  // create raw element with dom element?
+  const node = createCompoundVirtualNode(tagName, props);
+  // setNode((prev) => {
+  //   // do other preparation stuff
+  //   return { ...prev, [node.id]: node[node.id] };
+  // });
+  return node[node.id];
+};
+
+const div = (props) => createElement("div", props);
+const h1 = (props) => createElement("h1", props);
+const fragment = (props) => createElement("fragment", props);
+const t = (n, p) => createElement(n, p);
+
+function bruteCleanElement(element) {
+  // is this a "safe way" of cleaning an element?
+  if (!element) {
+    return;
+  }
+  // debugger;
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+  return element;
+}
+
+function bruteRemoveElement(element) {
+  // is this a "safe way" of cleaning an element?
+  if (!element) {
+    return;
+  }
+  const parent = element.parentElement;
+  // debugger
+  if (parent) {
+    element.remove();
+    return parent;
+  }
+  return document.createDocumentFragment();
+}
+
+// const flatTree = (root) => {
+//   // this flatten the tree stack
+//   const stack = root;
+//   const result = [];
+//
+//   while (stack.length > 0) {
+//     const node = stack.pop();
+//     result.push(node);
+//
+//     if (
+//       node.elementProperties &&
+//       Array.isArray(node.elementProperties.children) &&
+//       node.elementProperties.children[0]
+//     ) {
+//       // Añadimos los hijos en orden inverso para que se procesen de izquierda a derecha
+//       for (let i = node.elementProperties.children.length - 1; i >= 0; i -= 1) {
+//         stack.push(node.elementProperties.children[i]);
+//       }
+//     }
+//   }
+//
+//   return result;
+// };
+
+// function treeRender(tree, root = document.getElementById("v2render")) {
+//   // if (children && isArr(children) && children[0]) {
+//   //   const root = bruteRemoveElement(el);
+//   //   browserRender(children, root);
+//   //   counter = 0;
+//   //   return;
+//   // }
+//   const cleanRoot = bruteCleanElement(root);
+//   // debugger;
+//   const place_holder = {};
+//   Object.keys(tree).forEach((k) => {
+//     if (k === "node") {
+//       // append to parent
+//     }
+//     console.log(k);
+//   });
+// }
+const isArr = (a) => Array.isArray(a) && a[0];
+function applyPropsToElement({ node, elementProperties }, root) {
+  const props = elementProperties;
+
+  const propsKeys = Object.keys(props || {});
+  if (isArr(propsKeys) && propsKeys[0]) {
+    if (props.className) {
+      node.className = props.className;
+    }
+    if (props.style) {
+      const styleKeys = Object.keys(props.style);
+      if (styleKeys[0]) {
+        styleKeys.forEach((name) => {
+          node.style[name] = props.style[name];
+        });
+      }
+    }
+    const excludeList = ["style", "className", "text", "children"];
+    const propKeys = Object.keys(props);
+    if (propKeys[0]) {
+      propKeys.forEach((name) => {
+        if (excludeList.includes(name)) {
+          return;
+        }
+        node[name] = props[name];
+      });
+    }
+  }
+  // apply raw text
+  if (props.text) {
+    node.innerText = String(props.text); // todo: validate innerText text
+  }
+
+  // add event listeners
+  // if (Array.isArray(props.events) && props.events[0]) {
+  //   events.forEach(([eventName, fn]) => {
+  //     element.addEventListener(eventName, (event) => {
+  //       // const elName = element.tagName;
+  //       const promise = new Promise((resolve) => {
+  //         // if (elName === "INPUT") {
+  //         //   element.preventDefault();
+  //         // }
+  //         // if (elName === "FORM") {
+  //         //   element.preventDefault();
+  //         // }
+  //         if (typeof fn(event, element)) {
+  //           resolve("camilo");
+  //           // debugger
+  //           console.log(properties);
+  //         }
+  //       });
+  //       promise.then((res) => {
+  //         // element.innerText = String(new Date())
+  //         // res wil be 'camilo'
+  //         // window.render(); // provitional auto re-rendering
+  //         console.log("executed after action");
+  //       });
+  //     });
+  //   });
+  // }
+  return node;
+}
+
+function recursiveRender(tree, root = document.getElementById("v2render")) {
+  const vnode = applyPropsToElement(tree, root);
+  root.append(vnode);
+  if (
+    tree.elementProperties.children &&
+    Array.isArray(tree.elementProperties.children) &&
+    tree.elementProperties.children[0]
+  ) {
+    // const mainElement = document.createDocumentFragment();
+    // debugger
+    tree.elementProperties.children.forEach((branch) => {
+      recursiveRender(branch, vnode);
+    });
+  }
+}
+
+const Component = (parent) => {
+  const [tree, setTree] = treeSaver(undefined);
+
+  setTree(
+    t("P", {
+      text: "a div with text",
+      children: [
+        t("p", { text: "klk first" }),
+        t("p", { text: "klk" }),
+        t("p", {
+          children: [t("li", { text: "klk" }), t("li", { text: "klk last" })],
+        }),
+      ],
+    })
+  );
+  return tree();
+};
+
+const MainComponent = () => {
+  const [tree, setTree] = treeSaver(undefined);
+
+  setTree(
+    div({
+      text: "a div with text",
+      children: [
+        h1({ text: "klk first" }),
+        h1({ text: "klk" }),
+        div({
+          children: [
+            h1({ text: "klk" }),
+            h1({ text: "klk last" }),
+            Component(),
+          ],
+        }),
+      ],
+    })
+  );
+  return tree();
+};
+
+// const tree = [MainComponent(), Component];
+
+const recursiveTree = MainComponent();
+// this uses the concept of the main function of c code or java or any other programing language
+
+function init() {
+  recursiveRender(recursiveTree);
+}
+
+const renderV2 = init;
+const plh = 2;
+
+export { renderV2, plh };

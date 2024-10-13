@@ -490,9 +490,9 @@ const formito = () => {
 export const treeV1 = [
   ...manyClusters,
   HelloWorld({ children: cluster }),
-  // Game(),
-  ExampleForm(),
-  formito(),
+  // // Game(),
+  // ExampleForm(),
+  // formito(),
 ];
 
 // how update should work

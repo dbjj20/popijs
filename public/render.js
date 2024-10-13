@@ -379,13 +379,13 @@ function bruteRemoveElement(element) {
 export default function init(el, children) {
   if (children && isArr(children) && children[0]) {
     const root = bruteRemoveElement(el);
-    browserRender(children, root);
+    // browserRender(children, root);
     counter = 0;
-    return;
+    return;e
   }
   const root = bruteCleanElement(document.getElementById("root"));
 
-  browserRender(treeV1, root);
+  // browserRender(treeV1, root);
   counter = 0;
 }
 

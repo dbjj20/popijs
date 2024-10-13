@@ -1,16 +1,11 @@
-import tinyStore from "./tinyStore.js";
+import tinyStore, { treeSaver } from "./tinyStore.js";
 
 // a decentralized rendering arch
-const [getNode, setNode] = tinyStore({}, { isStateOnly: false });
 let counter = -1;
 
 const sequentialId = () => {
   counter += 1;
   return counter;
-};
-
-const copyObj = (val) => {
-  return JSON.parse(JSON.stringify(val));
 };
 
 const propsDefinition = {
@@ -31,7 +26,7 @@ const createCompoundVirtualNode = (tagName, props = propsDefinition) => {
       [id]: {
         id,
         elementProperties: { ...props },
-        c_v_node: document.createElement(tagName),
+        node: document.createElement(tagName),
       },
     };
   }
@@ -40,7 +35,8 @@ const createCompoundVirtualNode = (tagName, props = propsDefinition) => {
     [id]: {
       id,
       isFragment: true, // explicit key/value for later check
-      c_v_node: document.createDocumentFragment(),
+      elementProperties: { ...props },
+      node: document.createDocumentFragment(),
     },
   };
   // why? because yes :D
@@ -62,20 +58,320 @@ const createElement = (tagName, props) => {
   return node[node.id];
 };
 
-const component = () => {
-  const [tree, setTree] = tinyStore(undefined, { isStateOnly: false });
+const div = (props) => createElement("div", props);
+const button = (props) => createElement("div", props);
+const h1 = (props) => createElement("h1", props);
+const fragment = (props) => createElement("fragment", props);
+const t = (n, p) => createElement(n, p);
+
+/// /////////////////////////////////////////////////////////////////////////////
+
+// function parseCustomSyntax(input) {
+//   const lines = input.split("\n");
+//   const root = { type: "root", children: [] };
+//   const stack = [{ node: root, indent: -1 }];
+//
+//   function parseAttributes(line) {
+//     const parts = line.trim().split(/\s+/);
+//     const node = { type: parts[0], children: [] };
+//
+//     let currentKey = null;
+//     let currentValue = [];
+//     let inQuotes = false;
+//
+//     for (let i = 1; i < parts.length; i += 1) {
+//       const part = parts[i];
+//
+//       if (!currentKey) {
+//         const [key, ...value] = part.split(":");
+//         currentKey = key;
+//         currentValue = value;
+//         if (value.join(":").startsWith("'")) {
+//           inQuotes = true;
+//           currentValue = [value.join(":").slice(1)];
+//         } else if (value.length > 0) {
+//           node[currentKey] = value.join(":");
+//           currentKey = null;
+//         }
+//       } else if (inQuotes) {
+//         if (part.endsWith("'")) {
+//           currentValue.push(part.slice(0, -1));
+//           node[currentKey] = currentValue.join(" ");
+//           currentKey = null;
+//           inQuotes = false;
+//         } else {
+//           currentValue.push(part);
+//         }
+//       } else {
+//         node[currentKey] = currentValue.join(":");
+//         currentKey = null;
+//         i -= 1; // Retroceder para procesar esta parte como una nueva clave
+//       }
+//     }
+//
+//     if (currentKey) {
+//       node[currentKey] = currentValue.join(" ");
+//     }
+//
+//     return node;
+//   }
+//
+//   lines.forEach((line) => {
+//     if (line.trim() === "") return;
+//
+//     const indent = line.search(/\S/);
+//     const node = parseAttributes(line);
+//
+//     while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
+//       stack.pop();
+//     }
+//
+//     const parent = stack[stack.length - 1].node;
+//     parent.children.push(node);
+//     stack.push({ node, indent });
+//   });
+//
+//   return root.children[0];
+// }
+function parseCustomSyntax(input) {
+  const lines = input.split("\n");
+  const root = { type: "root", children: [] };
+  const stack = [{ node: root, indent: -1 }];
+
+  function parseAttributes(line) {
+    const parts = line.trim().split(/\s+/);
+    const node = { type: parts[0], children: [] };
+    let currentAttr = null;
+    let currentValue = [];
+    let inQuotes = false;
+
+    for (let i = 1; i < parts.length; i += 1) {
+      const part = parts[i];
+
+      if (!currentAttr) {
+        const colonIndex = part.indexOf(":");
+        if (colonIndex !== -1) {
+          currentAttr = part.slice(0, colonIndex);
+          const remainingPart = part.slice(colonIndex + 1);
+          if (remainingPart.startsWith('"')) {
+            inQuotes = true;
+            currentValue = [remainingPart.slice(1)];
+          } else if (remainingPart) {
+            node[currentAttr] = remainingPart;
+            currentAttr = null;
+          }
+        }
+      } else if (inQuotes) {
+        if (part.endsWith('"')) {
+          currentValue.push(part.slice(0, -1));
+          node[currentAttr] = currentValue.join(" ");
+          currentAttr = null;
+          inQuotes = false;
+        } else {
+          currentValue.push(part);
+        }
+      } else {
+        debugger
+        node[currentAttr] = currentValue.join(" ") || true;
+        currentAttr = null;
+        i -= 1; // Retroceder para procesar esta parte como un nuevo atributo
+      }
+    }
+
+    if (currentAttr) {
+      node[currentAttr] = currentValue.join(" ") || true;
+    }
+
+    return node;
+  }
+
+  lines.forEach((line) => {
+    if (line.trim() === "") return;
+
+    const indent = line.search(/\S/);
+    const node = parseAttributes(line);
+
+    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
+      stack.pop();
+    }
+
+    const parent = stack[stack.length - 1].node;
+    parent.children.push(node);
+    stack.push({ node, indent });
+  });
+
+  return root.children[0];
+}
+
+function generateTreeFunctionToString(node) {
+  const props = Object.entries(node)
+    .filter(([key]) => key !== "type" && key !== "children")
+    .map(([key, value]) => `${key}: "${value}"`)
+    .join(", ");
+
+  const children =
+    node.children && node.children.length > 0
+      ? `, children: [${node.children
+          .map(generateTreeFunctionToString)
+          .join(", ")}]`
+      : "";
+
+  return `${node.type}({ ${props}${children} })`;
+}
+
+const tagDefinitions = {
+  div,
+  h1,
+  button,
+  t,
+};
+
+function generateExecutableTree(node) {
+  const props = {};
+  Object.entries(node).forEach(([key, value]) => {
+    if (key !== "type" && key !== "children") {
+      props[key] = value;
+    }
+  });
+
+  if (node.children && node.children.length > 0) {
+    props.children = node.children.map(generateExecutableTree);
+  }
+
+  // Asumimos que las funciones de los elementos (div, button, h1, etc.) están definidas
+  return tagDefinitions[node.type](props);
+}
+
+const customSyntax = `
+div className:name onClick:myFunction text: 'a div with text'
+  button text: 'click me'
+  h1 text: 'klk first'
+  h1 text: 'klk'
+  div
+    h1 text: 'klk'
+    h1 text: 'klk last'
+`;
+
+const parsedTree = parseCustomSyntax(customSyntax);
+const result2 = generateTreeFunctionToString(parsedTree);
+const result = generateExecutableTree(parsedTree);
+
+function bruteCleanElement(element) {
+  // is this a "safe way" of cleaning an element?
+  if (!element) {
+    return;
+  }
+  // debugger;
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+  return element;
+}
+
+function bruteRemoveElement(element) {
+  // is this a "safe way" of cleaning an element?
+  if (!element) {
+    return;
+  }
+  const parent = element.parentElement;
+  // debugger
+  if (parent) {
+    element.remove();
+    return parent;
+  }
+  return document.createDocumentFragment();
+}
+
+const isArr = (a) => Array.isArray(a) && a[0];
+function applyPropsToElement({ node, elementProperties }, root) {
+  const props = elementProperties;
+
+  const propsKeys = Object.keys(props || {});
+  if (isArr(propsKeys) && propsKeys[0]) {
+    if (props.className) {
+      node.className = props.className;
+    }
+    if (props.style) {
+      const styleKeys = Object.keys(props.style);
+      if (styleKeys[0]) {
+        styleKeys.forEach((name) => {
+          node.style[name] = props.style[name];
+        });
+      }
+    }
+    const excludeList = ["style", "className", "text", "children"];
+    const propKeys = Object.keys(props);
+    if (propKeys[0]) {
+      propKeys.forEach((name) => {
+        if (excludeList.includes(name)) {
+          return;
+        }
+        node[name] = props[name];
+      });
+    }
+  }
+  // apply raw text
+  if (props.text) {
+    node.innerText = String(props.text); // todo: validate innerText text ??
+  }
+
+  // add event listeners
+  // if (Array.isArray(props.events) && props.events[0]) {
+  //   events.forEach(([eventName, fn]) => {
+  //     element.addEventListener(eventName, (event) => {
+  //       // const elName = element.tagName;
+  //       const promise = new Promise((resolve) => {
+  //         // if (elName === "INPUT") {
+  //         //   element.preventDefault();
+  //         // }
+  //         // if (elName === "FORM") {
+  //         //   element.preventDefault();
+  //         // }
+  //         if (typeof fn(event, element)) {
+  //           resolve("camilo");
+  //           // debugger
+  //           console.log(properties);
+  //         }
+  //       });
+  //       promise.then((res) => {
+  //         // element.innerText = String(new Date())
+  //         // res wil be 'camilo'
+  //         // window.render(); // provitional auto re-rendering
+  //         console.log("executed after action");
+  //       });
+  //     });
+  //   });
+  // }
+  return node;
+}
+
+function recursiveRender(tree, root = document.getElementById("v2render")) {
+  const vnode = applyPropsToElement(tree, root);
+  root.append(vnode);
+  if (
+    tree.elementProperties.children &&
+    Array.isArray(tree.elementProperties.children) &&
+    tree.elementProperties.children[0]
+  ) {
+    // const mainElement = document.createDocumentFragment();
+    // debugger
+    tree.elementProperties.children.forEach((branch) => {
+      recursiveRender(branch, vnode);
+    });
+  }
+}
+
+const Component = (parent) => {
+  const [tree, setTree] = treeSaver(undefined);
 
   setTree(
-    createElement("div", {
+    t("P", {
       text: "a div with text",
       children: [
-        createElement("h1", { text: "klk" }),
-        createElement("h1", { text: "klk" }),
-        createElement("div", {
-          children: [
-            createElement("h1", { text: "klk" }),
-            createElement("h1", { text: "klk" }),
-          ],
+        t("p", { text: "klk first" }),
+        t("p", { text: "klk" }),
+        t("p", {
+          children: [t("li", { text: "klk" }), t("li", { text: "klk last" })],
         }),
       ],
     })
@@ -83,60 +379,34 @@ const component = () => {
   return tree();
 };
 
-// const treeV2 = {
-//   div: {
-//     p: {
-//       memo: {
-//         count: 0,
-//       },
-//       _setState: (state) => {
-//         // never set functions, state only func
-//         this.memo = copyObj({ ...this.memo, ...state });
-//       },
-//       _getState: () => {
-//         return copyObj({ ...this.memo });
-//       },
-//       text: `p KLK ${this.memo.count}`,
-//       children: {
-//         li_1: {
-//           propsOn: true,
-//           className: "some class name",
-//           text: "KLK",
-//           events: {
-//             click: () => {
-//               // execute event fn
-//               console.log("in click event");
-//             },
-//           },
-//           styles: {},
-//           tagDomProps: {},
-//         },
-//         li_2: {
-//           propsOn: true,
-//           className: "some class name",
-//           text: "KLK",
-//           events: {
-//             click: () => {
-//               // execute event fn
-//               console.log("in click event");
-//             },
-//           },
-//           styles: {},
-//           tagDomProps: {},
-//         },
-//       },
-//     },
-//     h1: "random text",
-//     fragment: "random text",
-//   },
-// };
+const MainComponent = () => {
+  const [tree, setTree] = treeSaver(undefined);
 
-const tree = component();
+  setTree(
+    div({
+      text: "a div with text",
+      children: [
+        t("button", { text: "clickme" }),
+        h1({ text: "klk first" }),
+        h1({ text: "klk" }),
+        div({
+          children: [h1({ text: "klk" }), h1({ text: "klk last" })],
+        }),
+      ],
+    })
+  );
+  return tree();
+};
+
+// const tree = [MainComponent(), Component];
+
+const recursiveTree = MainComponent();
+// this uses the concept of the main function of c code or java or any other programing language
 
 function init() {
-  console.log("render v2", tree);
-
+  console.log(result, result2);
   debugger;
+  recursiveRender(recursiveTree);
 }
 
 const renderV2 = init;
