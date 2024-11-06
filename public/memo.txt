@@ -262,3 +262,217 @@ const renderV2 = init;
 const plh = 2;
 
 export { renderV2, plh };
+
+
+
+/// /////////////////////////////////////////////////////////////////////////////
+
+// function parseCustomSyntax(input) {
+//   const lines = input.split("\n");
+//   const root = { type: "root", children: [] };
+//   const stack = [{ node: root, indent: -1 }];
+//
+//   function parseAttributes(line) {
+//     const parts = line.trim().split(/\s+/);
+//     const node = { type: parts[0], children: [] };
+//
+//     let currentKey = null;
+//     let currentValue = [];
+//     let inQuotes = false;
+//
+//     for (let i = 1; i < parts.length; i += 1) {
+//       const part = parts[i];
+//
+//       if (!currentKey) {
+//         const [key, ...value] = part.split(":");
+//         currentKey = key;
+//         currentValue = value;
+//         if (value.join(":").startsWith("'")) {
+//           inQuotes = true;
+//           currentValue = [value.join(":").slice(1)];
+//         } else if (value.length > 0) {
+//           node[currentKey] = value.join(":");
+//           currentKey = null;
+//         }
+//       } else if (inQuotes) {
+//         if (part.endsWith("'")) {
+//           currentValue.push(part.slice(0, -1));
+//           node[currentKey] = currentValue.join(" ");
+//           currentKey = null;
+//           inQuotes = false;
+//         } else {
+//           currentValue.push(part);
+//         }
+//       } else {
+//         node[currentKey] = currentValue.join(":");
+//         currentKey = null;
+//         i -= 1; // Retroceder para procesar esta parte como una nueva clave
+//       }
+//     }
+//
+//     if (currentKey) {
+//       node[currentKey] = currentValue.join(" ");
+//     }
+//
+//     return node;
+//   }
+//
+//   lines.forEach((line) => {
+//     if (line.trim() === "") return;
+//
+//     const indent = line.search(/\S/);
+//     const node = parseAttributes(line);
+//
+//     while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
+//       stack.pop();
+//     }
+//
+//     const parent = stack[stack.length - 1].node;
+//     parent.children.push(node);
+//     stack.push({ node, indent });
+//   });
+//
+//   return root.children[0];
+// }
+
+// function parseLine(inputStr) {
+//   /**
+//    * Parsea un string con formato "key1:value1 key2:value2 text:'texto con espacios'"
+//    * donde solo el valor de 'text' puede contener espacios
+//    *
+//    * @param {string} inputStr - String a parsear
+//    * @returns {Object} Objeto con los pares key:value encontrados
+//    */
+//   const result = {};
+//
+//   // Primero manejamos el caso especial de text:'...'
+//   const textMatch = inputStr.match(/text:'([^']+)'/);
+//   if (textMatch) {
+//     result.text = textMatch[1];
+//     // Removemos la parte de text del string original
+//     inputStr = inputStr.replace(/text:'[^']*'/, "");
+//   }
+//
+//   // Procesamos el resto de los pares key:value
+//   const pairs = inputStr.trim().split(" ");
+//   pairs.forEach((pair) => {
+//     if (pair.includes(":")) {
+//       const [key, value] = pair.split(":");
+//       if (value) {
+//         // Solo si hay un valor
+//         result[key] = value;
+//       }
+//     }
+//   });
+//
+//   return result;
+// }
+// function parseAttributes(text) {
+//   // Objeto para almacenar los resultados
+//   const attributes = {};
+//
+//   // Patrón para identificar pares key:value
+//   // Busca palabras seguidas de : y luego texto normal o texto entre comillas
+//   const pattern = /(\w+):\s*(?:'([^']*)'|"([^"]*)"|([^\s'"][^\s]*))/g;
+//
+//   // Encuentra todas las coincidencias
+//   let match;
+//   while ((match = pattern.exec(text)) !== null) {
+//     const key = match[1];
+//     // El valor será el primer grupo que no sea undefined entre los grupos de captura
+//     const value = match[2] || match[3] || match[4];
+//     attributes[key] = value;
+//   }
+//
+//   return attributes;
+// }
+//
+// function parseCustomSyntax(input) {
+//   const lines = input.split("\n");
+//   const root = { type: "root", children: [] };
+//   const stack = [{ node: root, indent: -1 }];
+//
+//   function parseAttributes(line) {
+//     const pattern1 = /(\w+):\s*(?:'([^']*)'|"([^"]*)"|([^\s'"][^\s]*))/g;
+//     const pattern2 = /\s+/;
+//     const parts = line.split(pattern1).filter((p) => p);
+//     const node = { type: String(parts[0]).replace(/\s+/g, ''), children: [] };
+//
+//     let match;
+//     debugger;
+//     while ((match = pattern1.exec(line)) !== null) {
+//       if (Array.isArray(match) && match[0]){
+//         match = match.filter((e) => e);
+//         const key = match[1];
+//         // El valor será el primer grupo que no sea undefined entre los grupos de captura
+//         node[key] = match[2] || match[3] || match[4];
+//       }
+//     }
+//
+//     return node;
+//   }
+//
+//   lines.forEach((line) => {
+//     if (line.trim() === "") return;
+//
+//     const indent = line.search(/\S/);
+//     const node = parseAttributes(line);
+//
+//     while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
+//       stack.pop();
+//     }
+//
+//     const parent = stack[stack.length - 1].node;
+//     parent.children = [];
+//     parent.children.push(node);
+//     stack.push({ node, indent });
+//   });
+//
+//   return root.children[0];
+// }
+// function generateTreeFunctionToString(node) {
+//   const props = Object.entries(node)
+//     .filter(([key]) => key !== "type" && key !== "children")
+//     .map(([key, value]) => `${key}: "${value}"`)
+//     .join(", ");
+//   const children =
+//     node.children && node.children.length > 0
+//       ? `, children: [${node.children
+//           .map(generateTreeFunctionToString)
+//           .join(", ")}]`
+//       : "";
+//
+//   return `${node.type}({ ${props}${children} })`;
+// }
+
+// function generateExecutableTree(node) {
+//   const props = {};
+//   Object.entries(node).forEach(([key, value]) => {
+//     if (key !== "type" && key !== "children") {
+//       props[key] = value;
+//     }
+//   });
+//
+//   if (node.children && node.children.length > 0) {
+//     props.children = node.children.map(generateExecutableTree);
+//   }
+//
+//   // Asumimos que las funciones de los elementos (div, button, h1, etc.) están definidas
+//   return tagDefinitions[node.type](props);
+// }
+//
+// const customSyntax = `
+// div className:name onClick: myFunction_is_juan text: 'a div with text'
+//   button text: 'click me'
+//   h1 text: 'klk first'
+//   h1 text: 'klk'
+//   div
+//     h1 juan:klke text: 'klk'
+//     h1 text: 'klk last'
+// `;
+
+// const parsedTree = parseCustomSyntax(customSyntax);
+
+// const result2 = generateTreeFunctionToString(parsedTree);
+// debugger
+// const result = generateExecutableTree(parsedTree);

@@ -57,15 +57,13 @@ const tinyStore = (initialState, options = { name: "", isStateOnly: true }) => {
   return [getProps, setProps];
 };
 
-export const treeSaver = (initialState) => {
+export const treeSaver = (initialState, options) => {
+  if (options?.beforeInit && typeof options.beforeInit === "function") {
+    // debugger;
+    options.beforeInit();
+  }
   let tinyStoreState = initialState;
   const copyObj = (obj) => {
-    // if (isStateOnly) {
-    // return JSON.parse(JSON.stringify(obj));
-    // }
-    // if (Array.isArray(obj)) {
-    //   return [...obj];
-    // }
     return { ...obj };
   };
 
