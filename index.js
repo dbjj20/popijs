@@ -54,7 +54,7 @@ function getHtmlTemplate(r, c) {
 		`;
 }
 
-const port = Bun.env.POPI_PORT || 4321;
+const port = Bun.env.POPI_PORT || 5173;
 
 Bun.serve({
   port,

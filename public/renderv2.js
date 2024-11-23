@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return,react-hooks/rules-of-hooks */
 import tinyStore, { treeSaver } from "./tinyStore.js";
 
 // a decentralized rendering arch
@@ -17,6 +18,64 @@ const resetCounter = (n) => {
     setSeq(0);
   }
   return seq();
+};
+
+const optionsDefinition = {
+  globalRender: false,
+  partialRender: false,
+  multiDeps: true,
+  store: {},
+};
+
+function compare(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function effect(func, arr, old, callback) {
+  if (typeof func === "function") {
+    if (typeof arr === "undefined") {
+      return func();
+    }
+    callback(arr);
+    const res = compare(arr, old);
+    if (res) {
+      return;
+    }
+    return func();
+  }
+}
+
+const effectV2 = (options = optionsDefinition) => {
+  let state;
+  let interFunc;
+
+  const setEffect = (func, arr) => {
+    if (typeof func === "function") {
+      interFunc = func;
+      effect(func, arr, state, (deps) => {
+        state = deps;
+      });
+    }
+  };
+
+  const execute = (arr, el) => {
+    try {
+      if (typeof interFunc === "function") {
+        const res = compare(arr, state);
+        if (res) {
+          return;
+        }
+        const result = interFunc();
+        if (typeof result === "function" && !el) {
+          result();
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  return [setEffect, execute];
 };
 
 const propsDefinition = {
@@ -89,7 +148,7 @@ function applyPropsToElement({ elementProperties, id }) {
         });
       }
     }
-    const excludeList = ["style", "className", "text", "children"];
+    const excludeList = ["style", "className", "text", "children", "excluded"];
     const propKeys = Object.keys(props);
     if (propKeys[0]) {
       propKeys.forEach((name) => {
@@ -115,7 +174,8 @@ function applyPropsToElement({ elementProperties, id }) {
         if (events_map && !events_map[fn.name]) {
           node.addEventListener(event_name, (event) => {
             const promise = new Promise((resolve) => {
-              if (typeof fn(event)) {
+              // eslint-disable-next-line no-constant-condition
+              if (!fn(event)) {
                 // is this a good trick?
                 resolve("camilo");
               }
@@ -139,6 +199,7 @@ function applyPropsToElement({ elementProperties, id }) {
   return node;
 }
 const [flatNode, setFlatNode] = treeSaver({});
+const [Vtree, setVtree] = treeSaver({});
 
 function addNode(tree) {
   if (tree.tagName && tree.tagName !== "fragment" && !tree.node) {
@@ -146,7 +207,7 @@ function addNode(tree) {
       const node = document.createElement(tree.tagName);
       node.id = tree.id;
       setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
-      tree.node = node;
+      // tree.node = node;
     }
   }
   if (tree.tagName && tree.tagName !== "fragment" && !tree.node) {
@@ -154,7 +215,7 @@ function addNode(tree) {
       const node = document.createDocumentFragment();
       node.id = tree.id;
       setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
-      tree.node = node;
+      // tree.node = node;
     }
   }
 }
@@ -165,8 +226,17 @@ const addEvents = (tree) => {
     return { ...p, [tree.id]: { ...p[tree.id], events } };
   });
 };
-
-function recursiveRender(tree, root = document.getElementById("v2render")) {
+const extractIfCfTree = (tree) => {
+  if (tree?.tree) {
+    return tree?.tree;
+  }
+  return tree;
+};
+function recursiveRender(vtree, root = document.getElementById("v2render")) {
+  if (!vtree) {
+    return;
+  }
+  const tree = extractIfCfTree(vtree);
   addNode(tree);
   addEvents(tree);
   const vnode = applyPropsToElement(tree);
@@ -181,6 +251,90 @@ function recursiveRender(tree, root = document.getElementById("v2render")) {
     });
   }
 }
+
+const [componentTree, setComponent] = treeSaver({});
+function ComponentFactory(fn, key = "m") {
+  // a function that returns a computed value
+  const factoryName = `${fn.name}${key}`;
+  setComponent((p) => {
+    // once defined do not run this again
+    if (p[factoryName]) {
+      return p;
+    }
+    return {
+      ...p,
+      [factoryName]: {
+        tree: fn(recursiveRender),
+        state: {},
+      },
+    };
+  });
+
+  return componentTree()[factoryName];
+}
+
+// test tree section
+const [formState, setFormState] = tinyStore({
+  name: "name of the user",
+});
+
+const formito = (draw) => {
+  console.log("executing formito");
+  const [useEffect] = effectV2();
+  const [lastId, setId] = tinyStore(0);
+  // since the component executes once we can add vars that won't change its value during the life cycle of the component
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+    const { node } = flatNode()[lastId()];
+    draw(render(), node.parentElement);
+  };
+
+  const showInputValue = () => {
+    // keep this on track
+    const { name } = formState();
+    const [inputEffect] = effectV2();
+    const render = () =>
+      t("p", {
+        text: `
+      name: ${name}
+      time: ${new Date()}
+      `,
+        excluded: { parentId: lastId() },
+      });
+
+    inputEffect(render, [name]);
+    return render();
+  };
+
+  useEffect(() => {
+    const res = flatNode()[lastId()];
+    if (res) {
+      const { node } = res;
+      draw(render(), node.parentElement);
+    }
+  }, [lastId()]);
+
+  const render = () => {
+    const { name } = formState();
+    const i_tree = div({
+      children: [
+        ComponentFactory(showInputValue),
+        t("input", {
+          name: "name",
+          value: name,
+          events: {
+            input: handleChange,
+          },
+        }),
+      ],
+    });
+    setId(i_tree.id);
+    return i_tree;
+  };
+
+  return render();
+};
 
 const MainComponent = (draw) => {
   const [counter, setCounter] = tinyStore(0);
@@ -224,9 +378,11 @@ const MainComponent = (draw) => {
         div({
           children: [h1({ text: "klk" }), h1({ text: "klk last" })],
         }),
+        ComponentFactory(formito),
       ],
     });
     setId(i_tree.id);
+    setVtree(i_tree);
     return i_tree;
   }
   return render();
