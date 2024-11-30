@@ -1,6 +1,27 @@
 /* eslint-disable consistent-return,react-hooks/rules-of-hooks */
 import tinyStore, { treeSaver } from "./tinyStore.js";
 
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+// "i just found that i was replicating same react flaws"
+
 // a decentralized rendering arch
 
 const [seq, setSeq] = tinyStore(0);
@@ -9,16 +30,48 @@ const sequentialId = () => {
   setSeq((p) => p + 1);
   return seq();
 };
+//
+// const resetCounter = (n) => {
+//   if (n) {
+//     setSeq((p) => p - n);
+//   }
+//   if (!n) {
+//     setSeq(0);
+//   }
+//   return seq();
+// };
 
-const resetCounter = (n) => {
-  if (n) {
-    setSeq((p) => p - n);
+function findNodeIterative(tree, targetId, updateFunc) {
+  const stack = [tree];
+  while (stack.length > 0) {
+    const currentNode = stack.pop();
+    if (currentNode.id === targetId) {
+      updateFunc(currentNode, "update");
+      return;
+    }
+
+    if (currentNode.children) {
+      stack.push(...currentNode.children);
+    }
+
+    if (currentNode?.elementProperties?.children) {
+      stack.push(...currentNode?.elementProperties?.children);
+    }
   }
-  if (!n) {
-    setSeq(0);
+}
+
+function addUpdateProperty(tree, nodeId, propertyName, propertyValue) {
+  // Creamos una copia simple
+  const updatedTree = { ...tree };
+
+  function updateNode(node) {
+    node[propertyName] = propertyValue;
   }
-  return seq();
-};
+
+  // findAndUpdateNode(updatedTree, nodeId, updateNode);
+  findNodeIterative(updatedTree, nodeId, updateNode);
+  return updatedTree;
+}
 
 const optionsDefinition = {
   globalRender: false,
@@ -124,17 +177,20 @@ const createElement = (tagName, props) => {
   return node[node.id];
 };
 
-const div = (props) => createElement("div", props);
-const button = (props) => createElement("button", props);
-const h1 = (props) => createElement("h1", props);
-const fragment = (props) => createElement("fragment", props);
-const t = (n, p) => createElement(n, p);
+export const div = (props) => createElement("div", props);
+export const button = (props) => createElement("button", props);
+export const h1 = (props) => createElement("h1", props);
+export const fragment = (props) => createElement("fragment", props);
+export const t = (n, p) => createElement(n, p);
 
 const isArr = (a) => Array.isArray(a) && a[0];
-function applyPropsToElement({ elementProperties, id }) {
+
+function applyPropsToElement({ elementProperties, id }, action) {
   const { node, events, events_map } = flatNode()[id];
   const props = elementProperties;
-
+  if (action) {
+    // debugger;
+  }
   const propsKeys = Object.keys(props || {});
   if (isArr(propsKeys) && propsKeys[0]) {
     if (props.className) {
@@ -161,7 +217,8 @@ function applyPropsToElement({ elementProperties, id }) {
   }
   // apply raw text
   if (props.text) {
-    node.innerText = String(props.text); // todo: validate innerText text ??
+    // node.append(document.createTextNode(String(props.text)));
+    node.innerText = String(props.text);
   }
 
   // add event listeners
@@ -175,7 +232,7 @@ function applyPropsToElement({ elementProperties, id }) {
           node.addEventListener(event_name, (event) => {
             const promise = new Promise((resolve) => {
               // eslint-disable-next-line no-constant-condition
-              if (!fn(event)) {
+              if (!fn(event, node)) {
                 // is this a good trick?
                 resolve("camilo");
               }
@@ -199,13 +256,13 @@ function applyPropsToElement({ elementProperties, id }) {
   return node;
 }
 const [flatNode, setFlatNode] = treeSaver({});
-const [Vtree, setVtree] = treeSaver({});
+const [objTree, setObjTree] = treeSaver({});
 
 function addNode(tree) {
   if (tree.tagName && tree.tagName !== "fragment" && !tree.node) {
     if (!flatNode()[tree.id]) {
       const node = document.createElement(tree.tagName);
-      node.id = tree.id;
+      node.key = tree.id;
       setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
       // tree.node = node;
     }
@@ -232,24 +289,48 @@ const extractIfCfTree = (tree) => {
   }
   return tree;
 };
-function recursiveRender(vtree, root = document.getElementById("v2render")) {
-  if (!vtree) {
+
+function recursiveRender(
+  vTree,
+  root = document.getElementById("v2render"),
+  action = "create"
+) {
+
+  function renderChildren(tree, vnode){
+    if (
+      tree.elementProperties.children &&
+      Array.isArray(tree.elementProperties.children) &&
+      tree.elementProperties.children[0]
+    ) {
+      tree.elementProperties.children.forEach((branch) => {
+        recursiveRender(branch, vnode);
+      });
+    }
+  }
+  if (!vTree) {
     return;
   }
-  const tree = extractIfCfTree(vtree);
-  addNode(tree);
-  addEvents(tree);
-  const vnode = applyPropsToElement(tree);
-  root.append(vnode);
-  if (
-    tree.elementProperties.children &&
-    Array.isArray(tree.elementProperties.children) &&
-    tree.elementProperties.children[0]
-  ) {
-    tree.elementProperties.children.forEach((branch) => {
-      recursiveRender(branch, vnode);
-    });
+  const tree = extractIfCfTree(vTree);
+  let vnode;
+  if (action === "create") {
+    addNode(tree);
+    addEvents(tree);
+    vnode = applyPropsToElement(tree);
   }
+
+  if (action === "update") {
+    // only update and return
+    root = root.parentElement;
+    findNodeIterative(tree, root.key, (node) => {
+      vnode = node;
+      applyPropsToElement(node, "update"); // actual update
+      // add render children here
+    });
+    // re-append children when update
+    return;
+  }
+  root.append(vnode);
+  renderChildren(tree, vnode);
 }
 
 const [componentTree, setComponent] = treeSaver({});
@@ -283,10 +364,10 @@ const formito = (draw) => {
   const [useEffect] = effectV2();
   const [lastId, setId] = tinyStore(0);
   // since the component executes once we can add vars that won't change its value during the life cycle of the component
-  const handleChange = (e) => {
+  const handleChange = (e, vNode) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
-    const { node } = flatNode()[lastId()];
+    const { node } = flatNode()[vNode.key];
     draw(render(), node.parentElement);
   };
 
@@ -336,65 +417,74 @@ const formito = (draw) => {
   return render();
 };
 
-const MainComponent = (draw) => {
-  const [counter, setCounter] = tinyStore(0);
-  const [lastId, setId] = tinyStore(0);
+const microButton = (event, props) => {
   // const [tree, doTree] = treeSaver(undefined);
-
-  const increase = () => {
-    setCounter((p) => p + 1);
-    const { node } = flatNode()[lastId()];
-    draw(render(), node.parentElement);
-  };
-  const decrease = () => {
-    setCounter((p) => p - 1);
-    const { node } = flatNode()[lastId()];
-    draw(render(), node.parentElement);
-  };
-
   function render() {
-    resetCounter(lastId());
-    const i_tree = div({
-      text: "a div with text",
-      children: [
-        t("p", {
-          text: `show counter ${counter()}`,
-          children: [
-            t("li", {
-              children: [
-                button({ text: "increase", events: { click: increase } }),
-                h1({ text: String(new Date()) }),
-              ],
-            }),
-            t("li", {
-              children: [
-                button({ text: "decrease", events: { click: decrease } }),
-              ],
-            }),
-          ],
-        }),
-        h1({ text: "klk first" }),
-        h1({ text: "klk" }),
-        div({
-          children: [h1({ text: "klk" }), h1({ text: "klk last" })],
-        }),
-        ComponentFactory(formito),
-      ],
-    });
-    setId(i_tree.id);
-    setVtree(i_tree);
+    const i_tree = button({ ...props, events: { click: event } });
+    setObjTree(i_tree);
     return i_tree;
   }
   return render();
 };
 
-// const tree = [MainComponent(), Component];
+const MainComponent = (draw) => {
+  const [counter, setCounter] = tinyStore(0);
+  // const [tree, doTree] = treeSaver(undefined);
 
-const recursiveTree = MainComponent(recursiveRender);
+  const increase = (e, vNode) => {
+    setCounter((p) => p + 1);
+    // en vez de pasar el old tree, execute render and update
+    draw(objTree(), vNode, "update");
+  };
+  const decrease = (e, vNode) => {
+    setCounter((p) => p - 1);
+    draw(objTree(), vNode, "update");
+  };
+
+  return div({
+    text: "a div with text",
+    children: [
+      t("p", {
+        text: `show counter ${counter()}`,
+        children: [
+          t("li", {
+            text: "k",
+            children: [
+              button({ text: "sssss", events: { click: increase } }),
+              // button({ text: "sssss", events: { click: increase } }),
+              // microButton(increase, { text: "increase v2" }),
+              h1({ text: String(new Date()) }),
+            ],
+          }),
+          t("li", {
+            children: [
+              button({ text: "decrease", events: { click: decrease } }),
+              h1({ text: String(new Date()) }),
+            ],
+          }),
+        ],
+      }),
+      h1({ text: "klk first" }),
+      h1({ text: String(new Date()) }),
+      h1({ text: "klk" }),
+      div({
+        children: [
+          h1({ text: "klk" }),
+          h1({ text: "klk last" }),
+          h1({ text: String(new Date()) }),
+        ],
+      }),
+      // ComponentFactory(formito),
+    ],
+  });
+};
+
+// const tree = [MainComponent(), Component];
+setObjTree(MainComponent(recursiveRender));
 // this uses the concept of the main function of c code or java or any other static typed programing language
 
 function init() {
-  recursiveRender(recursiveTree);
+  recursiveRender(objTree());
 }
 
 const renderV2 = init;

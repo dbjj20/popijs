@@ -85,44 +85,140 @@
 //   }
 // }
 
-class Observable {
-  constructor(subscribe) {
-    this._subscribe = subscribe;
-  }
+// class Observable {
+//   constructor(subscribe) {
+//     this._subscribe = subscribe;
+//   }
+//
+//   // Subscribe to the observable
+//   subscribe(observer) {
+//     return this._subscribe(observer);
+//   }
+//
+//   // Create an observable from an array
+//   // static fromArray(array) {
+//   //   return new Observable((observer) => {
+//   //     array.forEach((item) => observer.next(item));
+//   //     observer.complete();
+//   //   });
+//   // }
+// }
+// // Example usage
+// const observable = new Observable((observer) => {
+//   // Emit some values
+//   observer.next(1);
+//   observer.next(2);
+//   observer.next(3);
+//   // Emit an error
+//   // observer.error('Something went wrong');
+//   // Complete the observable
+//   observer.complete();
+//   // Cleanup function (optional)
+//   return {
+//     unsubscribe: () => console.log("Observer unsubscribed"),
+//   };
+// });
+// // Subscribe to the observable
+// const subscription = observable.subscribe({
+//   next: (value) => console.log("Received:", value),
+//   error: (err) => console.error("Error occurred:", err),
+//   complete: () => console.log("Observable completed"),
+// });
+// // Unsubscribe (cleanup)
+// subscription.unsubscribe();
 
-  // Subscribe to the observable
-  subscribe(observer) {
-    return this._subscribe(observer);
-  }
+// function findAndUpdateNode(tree, nodeId, updateFunc) {
+//   // Si el nodo actual tiene el ID buscado, aplicamos la función de actualización
+//   if (tree.id === nodeId) {
+//     updateFunc(tree);
+//     return true;
+//   }
+//
+//   // Revisamos los hijos si existen
+//   if (tree.children && Array.isArray(tree.children)) {
+//     for (const child of tree.children) {
+//       // Buscamos recursivamente en cada hijo
+//       if (findAndUpdateNode(child, nodeId, updateFunc)) {
+//         return true;
+//       }
+//     }
+//   }
+//
+//   // Si no se encuentra el nodo
+//   return false;
+// }
 
-  // Create an observable from an array
-  // static fromArray(array) {
-  //   return new Observable((observer) => {
-  //     array.forEach((item) => observer.next(item));
-  //     observer.complete();
-  //   });
-  // }
+function findNodeIterative(tree, targetId, updateFunc) {
+  const stack = [tree];
+
+  while (stack.length > 0) {
+    const currentNode = stack.pop();
+
+    if (currentNode.id === targetId) {
+      updateFunc(currentNode);
+      return;
+    }
+
+    if (currentNode.children) {
+      stack.push(...currentNode.children);
+    }
+  }
 }
-// Example usage
-const observable = new Observable((observer) => {
-  // Emit some values
-  observer.next(1);
-  observer.next(2);
-  observer.next(3);
-  // Emit an error
-  // observer.error('Something went wrong');
-  // Complete the observable
-  observer.complete();
-  // Cleanup function (optional)
-  return {
-    unsubscribe: () => console.log("Observer unsubscribed"),
+
+function addUpdateProperty(tree, nodeId, propertyName, propertyValue) {
+  // Creamos una copia simple
+  const updatedTree = { ...tree };
+
+  function updateNode(node) {
+    node[propertyName] = propertyValue;
+  }
+
+  // findAndUpdateNode(updatedTree, nodeId, updateNode);
+  findNodeIterative(updatedTree, nodeId, updateNode);
+  return updatedTree;
+}
+
+// Ejemplo de uso
+function main() {
+  const tree = {
+    id: 15,
+    children: [
+      {
+        id: 7,
+        children: [
+          {
+            id: 3,
+            children: [{ id: 1 }, { id: 2 }],
+          },
+          {
+            id: 6,
+            children: [{ id: 4 }, { id: 5 }],
+          },
+        ],
+      },
+      { id: 8 },
+      { id: 9 },
+      { id: 10 },
+      {
+        id: 14,
+        children: [{ id: 11 }, { id: 12 }, { id: 13 }],
+      },
+    ],
   };
-});
-// Subscribe to the observable
-const subscription = observable.subscribe({
-  next: (value) => console.log("Received:", value),
-  error: (err) => console.error("Error occurred:", err),
-  complete: () => console.log("Observable completed"),
-});
-// Unsubscribe (cleanup)
-subscription.unsubscribe();
+
+  // Ejemplos de uso
+  // Agregar una propiedad 'name' al nodo con ID 7
+  let updatedTree = addUpdateProperty(tree, 7, "name", "Nodo Siete");
+
+  // Agregar una propiedad 'description' al nodo con ID 3
+  updatedTree = addUpdateProperty(updatedTree, 3, "description", "Nodo Tres");
+  updatedTree = addUpdateProperty(updatedTree, 5, "description", "Nodo 5");
+  updatedTree = addUpdateProperty(updatedTree, 2, "description", "Nodo klk");
+  updatedTree = addUpdateProperty(updatedTree, 2, "description", "Nodo maria");
+
+  // Imprimir el árbol actualizado
+  console.log(JSON.stringify(updatedTree, null, 2));
+}
+
+// Si quieres ejecutar el ejemplo, descomenta la siguiente línea
+main();

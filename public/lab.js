@@ -1,6 +1,6 @@
 import tinyStore from "./tinyStore";
 
-function randomString(strLength, charSet) {
+export function randomString(strLength, charSet) {
   const result = [];
 
   strLength = strLength || 5;
@@ -14,53 +14,4 @@ function randomString(strLength, charSet) {
   }
 
   return result.join("");
-}
-export const dd = 2;
-
-export const fni = (f) => {
-  const instate = {};
-  const ifn = (name, val) => {
-    const id = randomString();
-    // name is a placeholder
-    instate[id] = f(randomString(), val);
-    return id;
-  };
-
-  const getter = () => {
-    return instate;
-  };
-
-  return [getter, ifn];
-};
-
-export const fnc = (id, instate = 'klk') => {
-  const ifn = () => {
-    return instate;
-  };
-  const g = () => {
-    return id;
-  };
-  return [g, ifn];
-};
-
-const brs = (state) => {
-  let state = {};
-  
-  const getState = () => {
-    return state
-  }
-  
-  const setState = (data => {
-    state = {...state, ...data}
-  };
-  return [getState, setState]
-}
-
-export const basicRender = () => {
-  const [getState, setState] = brs();
-  
-  
-  const component = () => {
-  
-  }
 }
