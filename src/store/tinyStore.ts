@@ -11,24 +11,39 @@ export const tinyStore = <TState>(
 ): [() => TState, (propsOrSetter: TState | ((state: TState) => TState)) => void] => {
   const { name = "", isStateOnly = true } = options;
   let tinyStoreState: TState = initialState;
-  
-  // Define la función copyObj que crea una copia del estado
-  const copyObj = (obj: any): TState => {
-    if (isStateOnly) {
-      return JSON.parse(JSON.stringify(obj)) as TState;
+  let didWarnStructuredClone = false;
+
+  const cloneState = (value: TState): TState => {
+    if (!isStateOnly) {
+      return value;
     }
-    if (Array.isArray(obj)) {
-      return [...obj] as TState;
+
+    if (typeof structuredClone === "function") {
+      try {
+        return structuredClone(value);
+      } catch (error) {
+        if (!didWarnStructuredClone) {
+          console.warn("structuredClone fallback triggered", error);
+          didWarnStructuredClone = true;
+        }
+      }
     }
-    return { ...obj } as TState;
+
+    if (Array.isArray(value)) {
+      return [...value] as TState;
+    }
+
+    if (value && typeof value === "object") {
+      return { ...(value as Record<string, unknown>) } as TState;
+    }
+
+    return value;
   };
-  
-  // Función para obtener el estado actual
+
   const getProps = (): TState => {
-    return copyObj(tinyStoreState);
+    return cloneState(tinyStoreState);
   };
-  
-  // Función para registrar el estado en la consola
+
   const logState = (state: TState): void => {
     if (name && name.includes("PRINT")) {
       console.log(
@@ -37,22 +52,18 @@ export const tinyStore = <TState>(
       );
     }
   };
-  
-  // Función para actualizar el estado
+
   const setProps = (propsOrSetter: TState | ((state: TState) => TState)): void => {
     if (typeof propsOrSetter === "function") {
-      tinyStoreState = copyObj((propsOrSetter as (state: TState) => TState)(tinyStoreState));
+      tinyStoreState = cloneState((propsOrSetter as (state: TState) => TState)(tinyStoreState));
       logState(tinyStoreState);
       return;
     }
-    
-    // La lógica para manejar arrays, objetos, strings y números ha sido simplificada.
-    // Con la inferencia de tipos y los genéricos, no necesitas comprobaciones tan detalladas.
-    // La versión original tenía algunas comprobaciones redundantes o incompletas.
-    tinyStoreState = copyObj(propsOrSetter as TState);
+
+    tinyStoreState = cloneState(propsOrSetter as TState);
     logState(tinyStoreState);
   };
-  
+
   return [getProps, setProps];
 };
 // Define una interfaz para las opciones de treeSaver
@@ -73,7 +84,10 @@ export const treeSaver = <TState>(
   
   // Define la función copyObj para crear una copia del objeto
   const copyObj = (obj: any): TState => {
-    return { ...obj } as TState;
+    if (obj && typeof obj === "object") {
+      return { ...(obj as Record<string, unknown>) } as TState;
+    }
+    return obj as TState;
   };
   
   // Función para obtener el estado actual
@@ -109,51 +123,58 @@ type EffectOptions = any;
  */
 export const effectV2 = (
   options: EffectOptions = {}
-): [(func: EffectFunction, arr?: any[]) => void, (arr: any[], el?: any) => void] => {
-  let tinyStoreState: any; // El tipo `any` se usa porque no se especifica el tipo de estado.
+): [(func: EffectFunction, arr?: any[]) => void, (arr?: any[], el?: any) => void] => {
+  let cleanup: (() => void) | undefined;
   let interFunc: EffectFunction | undefined;
-  
-  /**
-   * Configura la función de efecto y sus dependencias.
-   * @param func La función que se ejecutará como efecto.
-   * @param arr Un array de dependencias.
-   */
-  const setEffect = (func: EffectFunction, arr?: any[]): void => {
-    if (typeof func === "function") {
-      interFunc = func;
-      // La función `effect` y `compare` no están definidas en el código original.
-      // Se asume que son funciones externas y se tipa su llamada.
-      // effect(func, arr, tinyStoreState, (deps) => {
-      //   tinyStoreState = deps;
-      // });
-      console.log('`effect` function placeholder called.');
+  let previousDeps: any[] | undefined;
+
+  const haveDepsChanged = (nextDeps: any[] = [], prevDeps: any[] | undefined): boolean => {
+    if (!prevDeps) {
+      return true;
+    }
+
+    if (nextDeps.length !== prevDeps.length) {
+      return true;
+    }
+
+    return nextDeps.some((value, index) => !Object.is(value, prevDeps[index]));
+  };
+
+  const runEffect = (deps: any[] = []) => {
+    if (typeof interFunc !== "function") {
+      return;
+    }
+
+    if (!haveDepsChanged(deps, previousDeps)) {
+      return;
+    }
+
+    cleanup?.();
+    const result = interFunc();
+    cleanup = typeof result === "function" ? result : undefined;
+    previousDeps = [...deps];
+  };
+
+  const setEffect = (func: EffectFunction, deps: any[] = []): void => {
+    if (typeof func !== "function") {
+      return;
+    }
+
+    cleanup?.();
+    cleanup = undefined;
+    previousDeps = undefined;
+    interFunc = func;
+    runEffect(deps);
+  };
+
+  const execute = (deps: any[] = [], el?: any): void => {
+    runEffect(deps);
+
+    if (el && typeof cleanup === "function" && options?.autoCleanup) {
+      cleanup();
+      cleanup = undefined;
     }
   };
-  
-  /**
-   * Ejecuta el efecto si las dependencias han cambiado.
-   * @param arr Un array de dependencias para comparar.
-   * @param el Un elemento opcional.
-   */
-  const execute = (arr: any[], el?: any): void => {
-    try {
-      if (typeof interFunc === "function") {
-        // La función `compare` no está definida en el código original.
-        // const res = compare(arr, tinyStoreState);
-        // if (res) {
-        //   return;
-        // }
-        console.log('`compare` function placeholder called.');
-        
-        const result = interFunc();
-        if (typeof result === "function" && !el) {
-          result();
-        }
-      }
-    } catch (e) {
-      console.warn(e);
-    }
-  };
-  
+
   return [setEffect, execute];
 };

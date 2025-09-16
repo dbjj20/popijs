@@ -2,17 +2,31 @@
 var tinyStore = (initialState, options = { name: "", isStateOnly: true }) => {
   const { name = "", isStateOnly = true } = options;
   let tinyStoreState = initialState;
-  const copyObj = (obj) => {
-    if (isStateOnly) {
-      return JSON.parse(JSON.stringify(obj));
+  let didWarnStructuredClone = false;
+  const cloneState = (value) => {
+    if (!isStateOnly) {
+      return value;
     }
-    if (Array.isArray(obj)) {
-      return [...obj];
+    if (typeof structuredClone === "function") {
+      try {
+        return structuredClone(value);
+      } catch (error) {
+        if (!didWarnStructuredClone) {
+          console.warn("structuredClone fallback triggered", error);
+          didWarnStructuredClone = true;
+        }
+      }
     }
-    return { ...obj };
+    if (Array.isArray(value)) {
+      return [...value];
+    }
+    if (value && typeof value === "object") {
+      return { ...value };
+    }
+    return value;
   };
   const getProps = () => {
-    return copyObj(tinyStoreState);
+    return cloneState(tinyStoreState);
   };
   const logState = (state) => {
     if (name && name.includes("PRINT")) {
@@ -21,36 +35,56 @@ var tinyStore = (initialState, options = { name: "", isStateOnly: true }) => {
   };
   const setProps = (propsOrSetter) => {
     if (typeof propsOrSetter === "function") {
-      tinyStoreState = copyObj(propsOrSetter(tinyStoreState));
+      tinyStoreState = cloneState(propsOrSetter(tinyStoreState));
       logState(tinyStoreState);
       return;
     }
-    tinyStoreState = copyObj(propsOrSetter);
+    tinyStoreState = cloneState(propsOrSetter);
     logState(tinyStoreState);
   };
   return [getProps, setProps];
 };
 var tinyStore_default = tinyStore;
 var effectV2 = (options = {}) => {
-  let tinyStoreState;
+  let cleanup;
   let interFunc;
-  const setEffect = (func, arr) => {
-    if (typeof func === "function") {
-      interFunc = func;
-      console.log("`effect` function placeholder called.");
+  let previousDeps;
+  const haveDepsChanged = (nextDeps = [], prevDeps) => {
+    if (!prevDeps) {
+      return true;
     }
+    if (nextDeps.length !== prevDeps.length) {
+      return true;
+    }
+    return nextDeps.some((value, index) => !Object.is(value, prevDeps[index]));
   };
-  const execute = (arr, el) => {
-    try {
-      if (typeof interFunc === "function") {
-        console.log("`compare` function placeholder called.");
-        const result = interFunc();
-        if (typeof result === "function" && !el) {
-          result();
-        }
-      }
-    } catch (e) {
-      console.warn(e);
+  const runEffect = (deps = []) => {
+    if (typeof interFunc !== "function") {
+      return;
+    }
+    if (!haveDepsChanged(deps, previousDeps)) {
+      return;
+    }
+    cleanup?.();
+    const result = interFunc();
+    cleanup = typeof result === "function" ? result : undefined;
+    previousDeps = [...deps];
+  };
+  const setEffect = (func, deps = []) => {
+    if (typeof func !== "function") {
+      return;
+    }
+    cleanup?.();
+    cleanup = undefined;
+    previousDeps = undefined;
+    interFunc = func;
+    runEffect(deps);
+  };
+  const execute = (deps = [], el) => {
+    runEffect(deps);
+    if (el && typeof cleanup === "function" && options?.autoCleanup) {
+      cleanup();
+      cleanup = undefined;
     }
   };
   return [setEffect, execute];
@@ -93,145 +127,65 @@ var h1 = (props) => createElement("h1", props);
 var t = (tagName, props) => createElement(tagName, props);
 
 // src/components/AnotherComponent.ts
+var buildControlsTree = (depth, handlers, extra) => {
+  const createLayer = (currentDepth) => {
+    const nested = currentDepth > 1 ? createLayer(currentDepth - 1) : undefined;
+    const increaseChildren = [
+      div({ text: "increase show counter {nT}" }),
+      button({ text: "increase", events: { click: handlers.increase } }),
+      ...nested ? [nested] : [],
+      ...extra ? extra({ depth: currentDepth, type: "increase" }) : []
+    ];
+    const decreaseChildren = [
+      div({ text: "decrease show counter {nT}" }),
+      button({ text: "decrease", events: { click: handlers.decrease } }),
+      ...extra ? extra({ depth: currentDepth, type: "decrease" }) : []
+    ];
+    return t("p", {
+      children: [
+        t("li", { text: "increaser {nT}", children: increaseChildren }),
+        t("li", { text: "decreaser  {nT}", children: decreaseChildren })
+      ]
+    });
+  };
+  return createLayer(depth);
+};
 var DuplicateAnotherComponent = (draw, objTree) => {
   const [counter, setCounter] = tinyStore_default(0);
-  const increase = (e, vNode) => {
+  const increase = (e, node) => {
     setCounter((p) => p + 1);
-    draw(objTree(), vNode, "update", { nT: counter() });
+    draw(objTree(), node, "update", { nT: counter() });
   };
-  const decrease = (e, vNode) => {
+  const decrease = (e, node) => {
     setCounter((p) => p - 1);
-    draw(objTree(), vNode, "update", { nT: counter() });
+    draw(objTree(), node, "update", { nT: counter() });
+  };
+  const extraNodes = ({ depth, type }) => {
+    if (depth === 1 && type === "decrease") {
+      return [t("h3", { text: String(new Date) })];
+    }
+    return [];
   };
   return div({
     text: "Another component",
     isParent: true,
-    children: [
-      t("p", {
-        children: [
-          t("li", {
-            text: "increaser {nT}",
-            children: [
-              div({ text: "increase show counter {nT}" }),
-              button({ text: "increase", events: { click: increase } }),
-              t("p", {
-                children: [
-                  t("li", {
-                    text: "increaser {nT}",
-                    children: [
-                      div({ text: "increase show counter {nT}" }),
-                      button({ text: "increase", events: { click: increase } }),
-                      t("p", {
-                        children: [
-                          t("li", {
-                            text: "increaser {nT}",
-                            children: [
-                              div({ text: "increase show counter {nT}" }),
-                              button({ text: "increase", events: { click: increase } })
-                            ]
-                          }),
-                          t("li", {
-                            text: "decreaser  {nT}",
-                            children: [
-                              div({ text: "decrease show counter {nT}" }),
-                              button({ text: "decrease", events: { click: decrease } }),
-                              t("h3", { text: String(new Date) })
-                            ]
-                          })
-                        ]
-                      })
-                    ]
-                  }),
-                  t("li", {
-                    text: "decreaser  {nT}",
-                    children: [
-                      div({ text: "decrease show counter {nT}" }),
-                      button({ text: "decrease", events: { click: decrease } })
-                    ]
-                  })
-                ]
-              })
-            ]
-          }),
-          t("li", {
-            text: "decreaser  {nT}",
-            children: [
-              div({ text: "decrease show counter {nT}" }),
-              button({ text: "decrease", events: { click: decrease } })
-            ]
-          })
-        ]
-      })
-    ]
+    children: [buildControlsTree(3, { increase, decrease }, extraNodes)]
   });
 };
 var AnotherComponent = (draw, objTree) => {
   const [counter, setCounter] = tinyStore_default(0);
-  const increase = (e, vNode) => {
+  const increase = (e, node) => {
     setCounter((p) => p + 1);
-    draw(objTree(), vNode, "update", { nT: counter() });
+    draw(objTree(), node, "update", { nT: counter() });
   };
-  const decrease = (e, vNode) => {
+  const decrease = (e, node) => {
     setCounter((p) => p - 1);
-    draw(objTree(), vNode, "update", { nT: counter() });
+    draw(objTree(), node, "update", { nT: counter() });
   };
   return div({
     text: "Another component",
     children: [
-      t("p", {
-        children: [
-          t("li", {
-            text: "increaser {nT}",
-            children: [
-              div({ text: "increase show counter {nT}" }),
-              button({ text: "increase", events: { click: increase } }),
-              t("p", {
-                children: [
-                  t("li", {
-                    text: "increaser {nT}",
-                    children: [
-                      div({ text: "increase show counter {nT}" }),
-                      button({ text: "increase", events: { click: increase } }),
-                      t("p", {
-                        children: [
-                          t("li", {
-                            text: "increaser {nT}",
-                            children: [
-                              div({ text: "increase show counter {nT}" }),
-                              button({ text: "increase", events: { click: increase } })
-                            ]
-                          }),
-                          t("li", {
-                            text: "decreaser  {nT}",
-                            children: [
-                              div({ text: "decrease show counter {nT}" }),
-                              button({ text: "decrease", events: { click: decrease } })
-                            ]
-                          })
-                        ]
-                      })
-                    ]
-                  }),
-                  t("li", {
-                    text: "decreaser  {nT}",
-                    children: [
-                      div({ text: "decrease show counter {nT}" }),
-                      button({ text: "decrease", events: { click: decrease } })
-                    ]
-                  })
-                ]
-              })
-            ]
-          }),
-          t("li", {
-            text: "decreaser  {nT}",
-            children: [
-              div({ text: "decrease show counter {nT}" }),
-              button({ text: "decrease", events: { click: decrease } })
-            ]
-          })
-        ]
-      }),
+      buildControlsTree(3, { increase, decrease }),
       DuplicateAnotherComponent(draw, objTree)
     ]
   });

@@ -1,7 +1,5 @@
 /* eslint-disable no-undef,default-case */
 import path from "path";
-import { createHtmlFromArray, serverRender } from "./lib";
-import { treeV1 } from "./public/tree";
 
 function getHtmlTemplate(r, c) {
   return `
@@ -105,11 +103,7 @@ Bun.serve({
 
     const context = { TestComponent_STATE: { count: 0 } };
 
-    const html = createHtmlFromArray(serverRender(treeV1));
-    const ren = getHtmlTemplate(
-      html,
-      JSON.stringify(context)
-    );
+    const ren = getHtmlTemplate("", JSON.stringify(context));
 
     return new Response(ren, { headers: { "Content-Type": "text/html" } });
   },

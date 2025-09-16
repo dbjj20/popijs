@@ -1,19 +1,17 @@
 // src/core/template.ts
 function template(template2, values) {
-  let count = 0;
-  let counterRes = false;
   if (!values)
     return template2;
+  let replaced = false;
   const result = template2.replace(/{(.*?)}/g, (_, key) => {
-    const res = String(key ? values[key] : "");
-    if (res) {
-      count += 1;
-      counterRes = true;
-      return res;
+    const value = key ? values[key] : undefined;
+    if (value === undefined || value === null) {
+      return `{${key}}`;
     }
-    return template2;
+    replaced = true;
+    return String(value);
   });
-  return count >= 1 && counterRes ? result : template2;
+  return replaced ? result : template2;
 }
 
 // src/render/propsApplier.ts
@@ -22,11 +20,14 @@ function applyPropsToElement(vNode, action, state = {}, flatNode, setFlatNode) {
   const { elementProperties, id } = vNode;
   const { node, events, events_map } = flatNode()[id];
   const props = elementProperties;
-  if (props.className)
+  if (node instanceof HTMLElement && props.className) {
     node.className = props.className;
+  }
   if (props.style) {
     Object.entries(props.style).forEach(([k, v]) => {
-      node.style[k] = v;
+      if (node instanceof HTMLElement) {
+        node.style[k] = v;
+      }
     });
   }
   const excludeList = ["style", "className", "text", "children"];
@@ -36,7 +37,8 @@ function applyPropsToElement(vNode, action, state = {}, flatNode, setFlatNode) {
     }
   });
   if (props.text) {
-    const text = new Text(String(template(props.text, state)));
+    const renderedText = String(template(props.text, state));
+    const text = new Text(renderedText);
     if (action === "update" && node.childNodes[0]?.nodeName === "#text") {
       node.childNodes[0].replaceWith(text);
     } else if (action === "create") {
@@ -44,21 +46,31 @@ function applyPropsToElement(vNode, action, state = {}, flatNode, setFlatNode) {
     }
   }
   if (events) {
-    Object.entries(events).forEach(([eventName, fn]) => {
-      if (!events_map?.[fn.name]) {
-        node.addEventListener(eventName, (event) => {
-          const promise = new Promise((resolve) => {
-            if (!fn(event, node))
-              resolve("after action");
-          });
-          promise.then((res) => console.log("executed", res));
-        });
-        setFlatNode((p) => ({
-          ...p,
-          [id]: { ...p[id], events_map: { ...p[id].events_map, [fn.name]: true } }
-        }));
+    const registry = events_map instanceof Map ? events_map : new Map;
+    registry.forEach((stored, eventName) => {
+      if (!events[eventName] || events[eventName] !== stored.original) {
+        node.removeEventListener(eventName, stored.wrapped);
+        registry.delete(eventName);
       }
     });
+    Object.entries(events).forEach(([eventName, fn]) => {
+      const stored = registry.get(eventName);
+      if (stored && stored.original === fn) {
+        return;
+      }
+      if (stored) {
+        node.removeEventListener(eventName, stored.wrapped);
+      }
+      const wrapped = (event) => {
+        fn(event, node);
+      };
+      node.addEventListener(eventName, wrapped);
+      registry.set(eventName, { original: fn, wrapped });
+    });
+    setFlatNode((p) => ({
+      ...p,
+      [id]: { ...p[id], events_map: registry }
+    }));
   }
   if (action === "update" && Array.isArray(props.children)) {
     props.children.forEach((child) => {
@@ -75,7 +87,10 @@ var treeSaver = (initialState, options) => {
   }
   let tinyStoreState = initialState;
   const copyObj = (obj) => {
-    return { ...obj };
+    if (obj && typeof obj === "object") {
+      return { ...obj };
+    }
+    return obj;
   };
   const getProps = () => {
     return copyObj(tinyStoreState);
@@ -96,12 +111,12 @@ function addNode(tree) {
   if (tree.tagName !== "fragment" && !flatNode()[tree.id]) {
     const node = document.createElement(tree.tagName);
     node.key = tree.id;
-    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
+    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: new Map } }));
   }
   if (tree.tagName === "fragment" && !flatNode()[tree.id]) {
     const node = document.createDocumentFragment();
     node.key = tree.id;
-    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
+    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: new Map } }));
   }
 }
 function addEvents(tree) {
@@ -155,10 +170,14 @@ function recursiveRender(vTree, root = document.getElementById("v2render"), acti
     vnode = applyPropsToElement(tree, "create", state, flatNode, setFlatNode);
   }
   if (action === "update") {
-    root = root.parentElement;
-    const existingNode = flatNode()[root.key];
+    const domNode = root;
+    const key = domNode?.key;
+    if (key == null) {
+      return;
+    }
+    const existingNode = flatNode()[key];
     if (existingNode) {
-      findNodeIterative(tree, root.key, (foundNode) => {
+      findNodeIterative(tree, key, (foundNode) => {
         applyPropsToElement(foundNode, "update", state, flatNode, setFlatNode);
       });
     }

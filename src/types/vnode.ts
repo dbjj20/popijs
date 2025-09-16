@@ -2,7 +2,7 @@
 export interface VNodeProps {
   className?: string;
   text?: string;
-  events?: Record<string, (e: Event, node: VNode) => void>;
+  events?: Record<string, (e: Event, node: HTMLElement) => void>;
   style?: Partial<CSSStyleDeclaration>;
   tagDomProps?: Record<string, any>;
   children?: VNode[];

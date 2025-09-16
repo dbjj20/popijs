@@ -2,6 +2,13 @@
 import { template } from "../core/template";
 import { VNode } from "../types/vnode";
 
+type StoredListener = {
+  original: (e: Event, node: HTMLElement) => void;
+  wrapped: EventListener;
+};
+
+type EventRegistry = Map<string, StoredListener>;
+
 export function applyPropsToElement(
   vNode: VNode,
   action: "create" | "update",
@@ -16,11 +23,15 @@ export function applyPropsToElement(
   const { node, events, events_map } = flatNode()[id];
   const props = elementProperties;
 
-  if (props.className) node.className = props.className;
+  if (node instanceof HTMLElement && props.className) {
+    node.className = props.className;
+  }
 
   if (props.style) {
     Object.entries(props.style).forEach(([k, v]) => {
-      (node.style as any)[k] = v;
+      if (node instanceof HTMLElement) {
+        (node.style as any)[k] = v;
+      }
     });
   }
 
@@ -32,7 +43,8 @@ export function applyPropsToElement(
   });
 
   if (props.text) {
-    const text = new Text(String(template(props.text, state)));
+    const renderedText = String(template(props.text, state));
+    const text = new Text(renderedText);
     if (action === "update" && node.childNodes[0]?.nodeName === "#text") {
       node.childNodes[0].replaceWith(text);
     } else if (action === "create") {
@@ -41,20 +53,39 @@ export function applyPropsToElement(
   }
 
   if (events) {
-    Object.entries(events).forEach(([eventName, fn]) => {
-      if (!events_map?.[fn.name]) {
-        node.addEventListener(eventName, (event: Event) => {
-          const promise = new Promise((resolve) => {
-            if (!fn(event, node)) resolve("after action");
-          });
-          promise.then((res) => console.log("executed", res));
-        });
-        setFlatNode((p) => ({
-          ...p,
-          [id]: { ...p[id], events_map: { ...p[id].events_map, [fn.name]: true } }
-        }));
+    const registry: EventRegistry = events_map instanceof Map ? events_map : new Map();
+
+    // Remove listeners that are no longer present or changed
+    registry.forEach((stored, eventName) => {
+      if (!events[eventName] || events[eventName] !== stored.original) {
+        node.removeEventListener(eventName, stored.wrapped);
+        registry.delete(eventName);
       }
     });
+
+    Object.entries(events).forEach(([eventName, fn]) => {
+      const stored = registry.get(eventName);
+      if (stored && stored.original === fn) {
+        return;
+      }
+
+      if (stored) {
+        node.removeEventListener(eventName, stored.wrapped);
+      }
+
+      const wrapped: EventListener = (event: Event) => {
+        fn(event, node as HTMLElement);
+      };
+
+      node.addEventListener(eventName, wrapped);
+
+      registry.set(eventName, { original: fn, wrapped });
+    });
+
+    setFlatNode((p) => ({
+      ...p,
+      [id]: { ...p[id], events_map: registry }
+    }));
   }
 
   if (action === "update" && Array.isArray(props.children)) {

@@ -9,13 +9,13 @@ function addNode(tree: VNode) {
   if (tree.tagName !== "fragment" && !flatNode()[tree.id]) {
     const node = document.createElement(tree.tagName);
     (node as any).key = tree.id;
-    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
+    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: new Map() } }));
   }
 
   if (tree.tagName === "fragment" && !flatNode()[tree.id]) {
     const node = document.createDocumentFragment();
     (node as any).key = tree.id;
-    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: {} } }));
+    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: new Map() } }));
   }
 }
 
@@ -84,13 +84,17 @@ export default function recursiveRender(
   }
 
   if (action === "update") {
-    root = (root as HTMLElement).parentElement!;
-    const existingNode = flatNode()[root.key];
+    const domNode = root as HTMLElement;
+    const key = (domNode as any)?.key;
+    if (key == null) {
+      return;
+    }
+
+    const existingNode = flatNode()[key];
     if (existingNode) {
-      findNodeIterative(tree, root.key, (foundNode) => {
+      findNodeIterative(tree, key, (foundNode) => {
         applyPropsToElement(foundNode, "update", state, flatNode, setFlatNode);
-      })
-      // renderChildren(existingNode, root, "update", state);
+      });
     }
     return;
   }

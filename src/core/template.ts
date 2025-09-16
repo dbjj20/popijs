@@ -1,19 +1,19 @@
 
 export function template(template: string, values?: Record<string, any>): string {
-  let count = 0;
-  let counterRes = false;
-
   if (!values) return template;
 
+  let replaced = false;
+
   const result = template.replace(/{(.*?)}/g, (_, key) => {
-    const res = String(key ? values[key] : "");
-    if (res) {
-      count += 1;
-      counterRes = true;
-      return res;
+    const value = key ? values[key] : undefined;
+
+    if (value === undefined || value === null) {
+      return `{${key}}`;
     }
-    return template;
+
+    replaced = true;
+    return String(value);
   });
 
-  return (count >= 1 && counterRes) ? result : template;
+  return replaced ? result : template;
 }
