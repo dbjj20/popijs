@@ -24,29 +24,17 @@ function getHtmlTemplate(r, c) {
       }
     </style>
     <script type="module">
-      import tinyStore from '/public/tinyStore.js'
-      import { treeV1 } from '/public/tree.js'
-      import render from '/public/render.js'
-      import {renderV2} from '/public/renderv2.js'
-      import {place} from '/public/renderv3.js'
+      import render, { objTree, setObjTree } from '/build/index.js'
+      import MainComponent from "/build/assets/MainComponent.js";
+      const tree = MainComponent(render, objTree)
+      setObjTree(tree)
+      render(objTree())
       
-      window.tinyStore = tinyStore
-      window.treeV1 = treeV1
-      window.render = render
-      // window.renderV2 = renderV2
-      render(treeV1)
-      
-      renderV2()
-      
-      
-      // basicRender()
     </script>
    
 		</head>
 		
 		<body>
-    <button onclick="render(treeV1)">Re-render</button>
-		<p id="juan"></p>
 		<div id="v2render"></div>
     ${r}
     </div>
@@ -65,7 +53,7 @@ Bun.serve({
   fetch: async (req, server) => {
     const url = new URL(req.url);
     console.log(url.href);
-    const whiteListPaths = ["public"];
+    const whiteListPaths = ["public", "build"];
     if (whiteListPaths.some((url) => req.url.includes(url))) {
       const ext = path.extname(req.url);
       if (ext) {
@@ -118,9 +106,8 @@ Bun.serve({
     const context = { TestComponent_STATE: { count: 0 } };
 
     const html = createHtmlFromArray(serverRender(treeV1));
-    // <div id="root">${html}</div>
     const ren = getHtmlTemplate(
-      ``,
+      html,
       JSON.stringify(context)
     );
 
