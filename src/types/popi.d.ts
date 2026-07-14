@@ -3,4 +3,5 @@ declare module "*.popi" {
 
   export const CounterCard: (scope?: Record<string, any>) => VNode;
   export const EchoCard: (scope?: Record<string, any>) => VNode;
+  export const ServerDataPanel: (scope?: Record<string, any>) => VNode;
 }

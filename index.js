@@ -41,6 +41,17 @@ function getHtmlTemplate(r, c) {
         justify-content: center;
       }
 
+      .app-shell > h1 {
+        font-size: 24px;
+        line-height: 1.15;
+        margin: 0 0 8px;
+      }
+
+      .app-shell > p {
+        color: #626975;
+        margin: 0 0 18px;
+      }
+
       .capability {
         background: #fff;
         border: 1px solid #d9dde3 !important;
@@ -118,6 +129,18 @@ Bun.serve({
   fetch: async (req, server) => {
     const url = new URL(req.url);
     console.log(url.href);
+
+    if (url.pathname === "/api/mock/users") {
+      return Response.json({
+        message: "Loaded from mock server",
+        users: [
+          { id: 1, name: "Ada Lovelace", role: "Compiler" },
+          { id: 2, name: "Grace Hopper", role: "Runtime" },
+          { id: 3, name: "Edsger Dijkstra", role: "Algorithms" }
+        ]
+      });
+    }
+
     const whiteListPaths = ["public", "build"];
     if (whiteListPaths.some((url) => req.url.includes(url))) {
       const ext = path.extname(req.url);

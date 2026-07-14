@@ -31,6 +31,33 @@ component CounterCard {
 }
 ```
 
+Handlers can also live inside `.popi` components:
+
+```popi
+component EchoCard {
+  handler updateMessage {
+    update { echo: event.target.value }
+  }
+
+  div(isBoundary) {
+    input(on:input=updateMessage)
+    div("Echo: {echo:}")
+  }
+}
+```
+
+Handlers can use `await`; the compiler emits an async function when needed. A
+more real component can request demo server data and update its boundary:
+
+```popi
+handler loadUsers {
+  update { serverStatus: "loading" }
+  const response = await fetch("/api/mock/users");
+  const payload = await response.json();
+  update { serverStatus: "loaded", userCount: payload.users.length }
+}
+```
+
 Compile it into the current VNode structure:
 
 ```bash

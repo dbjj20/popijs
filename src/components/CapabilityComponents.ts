@@ -1,75 +1,7 @@
 import { button, div, fragment, t } from "../core/virtualNode";
 import tinyStore from "../store/tinyStore";
-import { CounterCard } from "../../compiler/examples/Counter.popi";
-
-export const BoundaryCounterComponent = (draw: any, objTree: any) => {
-  const [counter, setCounter] = tinyStore(0);
-
-  const increment = (_event: Event, node: HTMLElement) => {
-    setCounter((value) => value + 1);
-    draw(objTree(), node, "update", { boundaryClicks: counter() });
-  };
-
-  const decrement = (_event: Event, node: HTMLElement) => {
-    setCounter((value) => value - 1);
-    draw(objTree(), node, "update", { boundaryClicks: counter() });
-  };
-
-  return div({
-    isBoundary: true,
-    className: "capability capability-counter",
-    style: {
-      border: "1px solid #ddd",
-      padding: "12px",
-      marginTop: "12px"
-    },
-    children: [
-      t("h2", { text: "Independent boundary counter" }),
-      div({ text: "Boundary value: {boundaryClicks:0}" }),
-      button({ text: "+", events: { click: increment } }),
-      button({ text: "-", events: { click: decrement } }),
-      div({ text: "Static text should not change during updates." })
-    ]
-  });
-};
-
-export const InputEchoComponent = (draw: any, objTree: any) => {
-  const [message, setMessage] = tinyStore("");
-
-  const updateMessage = (event: Event, node: HTMLElement) => {
-    const value = (event.target as HTMLInputElement).value;
-    setMessage(value);
-    draw(objTree(), node, "update", { echo: message() });
-  };
-
-  return div({
-    isBoundary: true,
-    className: "capability capability-input",
-    style: {
-      border: "1px solid #ddd",
-      padding: "12px",
-      marginTop: "12px"
-    },
-    effect: (node, state) => {
-      const element = node as HTMLElement;
-      const value = String(state.echo ?? "");
-      element.dataset.echoLength = String(value.length);
-      element.style.borderColor = value.length > 0 ? "#4b8f8c" : "#d9dde3";
-
-      return () => {
-        element.style.borderColor = "";
-      };
-    },
-    children: [
-      t("h2", { text: "Input echo" }),
-      t("input", {
-        placeholder: "type here",
-        events: { input: updateMessage }
-      }),
-      div({ text: "Echo: {echo:}" })
-    ]
-  });
-};
+import { CounterCard, EchoCard } from "../../compiler/examples/Counter.popi";
+import { ServerDataPanel } from "../../compiler/examples/ServerPanel.popi";
 
 export const FragmentListComponent = (draw: any, objTree: any) => {
   const [selected, setSelected] = tinyStore("none");
@@ -82,13 +14,8 @@ export const FragmentListComponent = (draw: any, objTree: any) => {
   return div({
     isBoundary: true,
     className: "capability capability-fragment",
-    style: {
-      border: "1px solid #ddd",
-      padding: "12px",
-      marginTop: "12px"
-    },
     children: [
-      t("h2", { text: "Fragment children" }),
+      t("h2", { text: "Fragment action group" }),
       fragment({
         children: [
           button({ text: "select A", events: { click: select("A") } }),
@@ -111,11 +38,6 @@ export const EffectDemoComponent = (draw: any, objTree: any) => {
   return div({
     isBoundary: true,
     className: "capability capability-effect",
-    style: {
-      border: "1px solid #ddd",
-      padding: "12px",
-      marginTop: "12px"
-    },
     effect: [
       (node, state, action) => {
         const element = node as HTMLElement;
@@ -158,4 +80,12 @@ export const CompiledCounterComponent = (draw: any, objTree: any) => {
   };
 
   return CounterCard({ increase, decrease });
+};
+
+export const CompiledEchoComponent = (draw: any, objTree: any) => {
+  return EchoCard({ draw, objTree });
+};
+
+export const CompiledServerDataComponent = (draw: any, objTree: any) => {
+  return ServerDataPanel({ draw, objTree });
 };

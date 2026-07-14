@@ -114,6 +114,31 @@ component CounterCard {
 }
 ```
 
+Local handlers can be declared before the root element:
+
+```popi
+component EchoCard {
+  handler updateMessage {
+    update { echo: event.target.value }
+  }
+
+  div(isBoundary) {
+    input(on:input=updateMessage)
+    div("Echo: {echo:}")
+  }
+}
+```
+
+Handlers compile into local functions inside the generated component. If params
+are omitted, the compiler uses `(event, node)`. The magic `update { ... }`
+statement compiles to `scope.draw(scope.objTree(), node, "update", { ... })`.
+`scope` remains available inside handler bodies for external values such as
+stores or services.
+
+Handlers containing `await` compile as async functions. See
+`compiler/examples/ServerPanel.popi` for the request/update demo that calls the
+mock `/api/mock/users` endpoint in `index.js`.
+
 Compiled output is normal TS that imports only used VNode helpers:
 
 ```ts
@@ -128,6 +153,8 @@ Rules currently supported:
 - Boolean props: `div(isBoundary)`.
 - Value props: `input(placeholder="type here")`.
 - Events: `button("+", on:click=increase)`.
+- Local handlers: `handler updateMessage { ... }` or `handler updateMessage(event, node) { ... }`.
+- Magic update statements inside handlers: `update { echo: event.target.value }`.
 - Nested children using braces.
 - Known helper tags: `div`, `button`, `h1`, `fragment`.
 - Unknown tags compile through `t("tag", props)`.

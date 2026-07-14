@@ -8,6 +8,10 @@ component CounterCard {
 }
 
 component EchoCard {
+  handler updateMessage {
+    update { echo: event.target.value }
+  }
+
   div(isBoundary, className="capability capability-input") {
     h2("Compiled echo")
     input(placeholder="type here", on:input=updateMessage)
