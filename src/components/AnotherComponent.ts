@@ -22,22 +22,22 @@ const buildControlsTree = (
     const nested = currentDepth > 1 ? createLayer(currentDepth - 1) : undefined;
 
     const increaseChildren = [
-      div({ text: "increase show counter {nT}" }),
+      div({ text: "increase show counter {nT:0}" }),
       button({ text: "increase", events: { click: handlers.increase } }),
       ...(nested ? [nested] : []),
       ...(extra ? extra({ depth: currentDepth, type: "increase" }) : [])
     ];
 
     const decreaseChildren = [
-      div({ text: "decrease show counter {nT}" }),
+      div({ text: "decrease show counter {nT:0}" }),
       button({ text: "decrease", events: { click: handlers.decrease } }),
       ...(extra ? extra({ depth: currentDepth, type: "decrease" }) : [])
     ];
 
     return t("p", {
       children: [
-        t("li", { text: "increaser {nT}", children: increaseChildren }),
-        t("li", { text: "decreaser  {nT}", children: decreaseChildren })
+        t("li", { text: "increaser {nT:0}", children: increaseChildren }),
+        t("li", { text: "decreaser  {nT:0}", children: decreaseChildren })
       ]
     });
   };
@@ -67,7 +67,7 @@ const DuplicateAnotherComponent = (draw: any, objTree: any) => {
 
   return div({
     text: "Another component",
-    isParent: true,
+    isBoundary: true,
     children: [buildControlsTree(3, { increase, decrease }, extraNodes)]
   });
 };
@@ -87,6 +87,7 @@ const AnotherComponent = (draw: any, objTree: any) => {
 
   return div({
     text: "Another component",
+    isBoundary: true,
     children: [
       buildControlsTree(3, { increase, decrease }),
       DuplicateAnotherComponent(draw, objTree)

@@ -1,66 +1,61 @@
 
 import {FvNode, VNode} from "./types/vnode";
-import { applyPropsToElement } from "./render/propsApplier";
+import { applyPropsToElement, runEffect } from "./render/propsApplier";
 import { treeSaver } from "./store/tinyStore";
 
 const [flatNode, setFlatNode] = treeSaver<Record<number, any>>({});
 
-function addNode(tree: VNode) {
-  if (tree.tagName !== "fragment" && !flatNode()[tree.id]) {
-    const node = document.createElement(tree.tagName);
-    (node as any).key = tree.id;
-    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: new Map() } }));
-  }
+function addNode(tree: VNode, parentId?: number) {
+  if (flatNode()[tree.id]) return;
 
-  if (tree.tagName === "fragment" && !flatNode()[tree.id]) {
-    const node = document.createDocumentFragment();
-    (node as any).key = tree.id;
-    setFlatNode((p) => ({ ...p, [tree.id]: { node, events_map: new Map() } }));
-  }
-}
+  const node = tree.tagName === "fragment"
+    ? document.createDocumentFragment()
+    : document.createElement(tree.tagName);
 
-function addEvents(tree: VNode) {
-  const { events } = tree.elementProperties;
-  setFlatNode((p) => ({
-    ...p,
-    [tree.id]: { ...p[tree.id], events }
-  }));
+  (node as any).key = tree.id;
+
+  setFlatNode((p) => {
+    p[tree.id] = {
+      node,
+      vNode: tree,
+      parentId,
+      isParent: Boolean(tree.elementProperties?.isParent),
+      isBoundary: Boolean(tree.elementProperties?.isBoundary),
+      events: tree.elementProperties.events,
+      events_map: new Map()
+    };
+    return p;
+  });
 }
 
 function extractIfCfTree(tree: any): VNode {
   return tree?.tree || tree;
 }
 
-function renderChildren(tree: VNode, vnode: any, action: "create" | "update", state?: any) {
+function renderChildren(tree: VNode, vnode: Node, state?: any) {
   const children = tree.elementProperties.children;
   if (Array.isArray(children) && children.length > 0) {
-    children.forEach((branch) => {
-      if (action === "update") {
-        return recursiveRender(branch, flatNode()[branch.id].node, action, state);
-      }
-      recursiveRender(branch, vnode, action, state);
-    });
+    for (let i = 0; i < children.length; i += 1) {
+      recursiveRender(children[i], vnode, "create", state, tree.id);
+    }
   }
 }
 
-function findNodeIterative(tree, targetId, updateFunc) {
-  const stack = [tree];
-  while (stack.length > 0) {
-    const currentNode = stack.pop();
-    if (currentNode.id === targetId) {
-      updateFunc(currentNode, "update");
-      return;
-    }
-    
-    if (currentNode.children) {
-      stack.push(...currentNode.children);
-    }
-    
-    if (currentNode?.elementProperties?.children) {
-      stack.push(...currentNode?.elementProperties?.children);
-    }
+function findNearestUpdateScopeId(nodes: Record<number, any>, startId: number): number {
+  let currentId: number | undefined = startId;
+  let nearestParentId: number | undefined;
+
+  while (currentId != null) {
+    const entry = nodes[currentId];
+    if (!entry) return startId;
+    if (entry.isBoundary) return currentId;
+    if (entry.isParent && nearestParentId == null) nearestParentId = currentId;
+    currentId = entry.parentId;
   }
+
+  return nearestParentId ?? startId;
 }
+
 const [objTree, setObjTree] = treeSaver<any>({});
 setObjTree({})
 objTree()
@@ -70,7 +65,8 @@ export default function recursiveRender(
   vTree: FvNode | VNode,
   root: HTMLElement | DocumentFragment = document.getElementById("v2render")!,
   action: "create" | "update" = "create",
-  state?: Record<string, any>
+  state?: Record<string, any>,
+  parentId?: number
 ): void {
   if (!vTree) return;
 
@@ -78,27 +74,35 @@ export default function recursiveRender(
   let vnode;
 
   if (action === "create") {
-    addNode(tree);
-    addEvents(tree);
+    addNode(tree, parentId);
     vnode = applyPropsToElement(tree, "create", state, flatNode, setFlatNode);
   }
 
   if (action === "update") {
     const domNode = root as HTMLElement;
     const key = (domNode as any)?.key;
-    if (key == null) {
-      return;
+    if (key == null) return;
+
+    const nodes = flatNode();
+    const boundaryId = findNearestUpdateScopeId(nodes, key);
+    const boundaryEntry = nodes[boundaryId];
+    const vNodeToUpdate = boundaryEntry?.vNode;
+    if (!vNodeToUpdate) return;
+
+    const mergedState = boundaryEntry.state || (boundaryEntry.state = {});
+    let changedKeys: Record<string, any> | undefined;
+    if (state) {
+      for (const key in state) {
+        mergedState[key] = state[key];
+        changedKeys = state;
+      }
     }
 
-    const existingNode = flatNode()[key];
-    if (existingNode) {
-      findNodeIterative(tree, key, (foundNode) => {
-        applyPropsToElement(foundNode, "update", state, flatNode, setFlatNode);
-      });
-    }
+    applyPropsToElement(vNodeToUpdate, "update", mergedState, flatNode, setFlatNode, changedKeys);
     return;
   }
 
   root.appendChild(vnode);
-  renderChildren(tree, vnode, "create", state);
+  renderChildren(tree, vnode, state);
+  runEffect(tree, "create", state, flatNode, setFlatNode);
 }

@@ -1,16 +1,20 @@
 
 import { div, t, button, h1 } from "../core/virtualNode";
-import tinyStore, {effectV2} from "../store/tinyStore";
+import tinyStore from "../store/tinyStore";
 import AnotherComponent from "./AnotherComponent";
+import {
+  BoundaryCounterComponent,
+  EffectDemoComponent,
+  FragmentListComponent,
+  InputEchoComponent
+} from "./CapabilityComponents";
 
 const MainComponent = (draw: any, objTree: any) => {
   const [counter, setCounter] = tinyStore(0);
   const [inter, setlLastInter] = tinyStore(0);
-  // debugger
 
   const increase = (e: Event, vNode: any) => {
     setCounter((p) => p + 1);
-    // debugger
     draw(objTree(), vNode, "update", { nT: counter() });
   };
 
@@ -25,18 +29,17 @@ const MainComponent = (draw: any, objTree: any) => {
     setlLastInter(interval);
     draw(objTree(), vNode, "update", { nT: counter() });
   };
-  const [setEffect, execute] = effectV2()
 
   const tree = div({
-    effect: () => setEffect,
-    text: "a div with text {nT}",
+    text: "a div with text {nT:0}",
+    isBoundary: true,
     children: [
       t("p", {
         children: [
           t("li", {
-            text: "increaser {nT}",
+            text: "increaser {nT:0}",
             children: [
-              div({ text: "increase show counter {nT}" }),
+              div({ text: "increase show counter {nT:0}" }),
               button({ text: "increase", events: { click: increase } }),
               h1({ text: String(new Date()) })
             ]
@@ -44,14 +47,18 @@ const MainComponent = (draw: any, objTree: any) => {
           t("li", {
             text: "decreaser",
             children: [
-              div({ text: "decrease show counter {nT}" }),
+              div({ text: "decrease show counter {nT:0}" }),
               button({ text: "decrease", events: { click: decrease } }),
               h1({ text: String(new Date()) }),
-              h1({ text: "{myDate}" })
+              h1({ text: "{myDate:}" })
             ]
           })
         ]
       }),
+      BoundaryCounterComponent(draw, objTree),
+      InputEchoComponent(draw, objTree),
+      FragmentListComponent(draw, objTree),
+      EffectDemoComponent(draw, objTree),
       AnotherComponent(draw, objTree)
     ]
   });

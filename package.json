@@ -1,7 +1,14 @@
 {
   "name": "dadyjs",
-  "module": "index.ts",
+  "module": "./src/index.ts",
   "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./virtual-node": "./src/core/virtualNode.ts",
+    "./store": "./src/store/tinyStore.ts",
+    "./template": "./src/core/template.ts"
+  },
   "scripts": {
     "dev": "bun build.ts && bun --watch index.js"
   },

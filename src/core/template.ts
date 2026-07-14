@@ -1,19 +1,11 @@
 
-export function template(template: string, values?: Record<string, any>): string {
-  if (!values) return template;
-
-  let replaced = false;
-
-  const result = template.replace(/{(.*?)}/g, (_, key) => {
+export function template(template: string, values: Record<string, any> = {}): string {
+  return template.replace(/{(.*?)}/g, (_, expression) => {
+    const fallbackIndex = expression.indexOf(":");
+    const key = fallbackIndex === -1 ? expression : expression.slice(0, fallbackIndex);
+    const fallback = fallbackIndex === -1 ? "" : expression.slice(fallbackIndex + 1);
     const value = key ? values[key] : undefined;
 
-    if (value === undefined || value === null) {
-      return `{${key}}`;
-    }
-
-    replaced = true;
-    return String(value);
+    return value === undefined || value === null ? fallback : String(value);
   });
-
-  return replaced ? result : template;
 }

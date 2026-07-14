@@ -81,28 +81,17 @@ export const treeSaver = <TState>(
   }
   
   let tinyStoreState: TState = initialState;
-  
-  // Define la función copyObj para crear una copia del objeto
-  const copyObj = (obj: any): TState => {
-    if (obj && typeof obj === "object") {
-      return { ...(obj as Record<string, unknown>) } as TState;
-    }
-    return obj as TState;
-  };
-  
-  // Función para obtener el estado actual
+
   const getProps = (): TState => {
-    return copyObj(tinyStoreState);
+    return tinyStoreState;
   };
   
-  // Función para actualizar el estado
   const setProps = (propsOrSetter: TState | ((state: TState) => TState)): void => {
     if (typeof propsOrSetter === "function") {
-      tinyStoreState = copyObj((propsOrSetter as (state: TState) => TState)(tinyStoreState));
+      tinyStoreState = (propsOrSetter as (state: TState) => TState)(tinyStoreState);
       return;
     }
-    // Simplificación similar a tinyStore
-    tinyStoreState = copyObj(propsOrSetter as TState);
+    tinyStoreState = propsOrSetter as TState;
   };
   
   return [getProps, setProps];

@@ -26,8 +26,19 @@ export function createCompoundVirtualNode(tagName: string, props: VNodeProps = p
 }
 
 export function createElement(tagName: string, props: VNodeProps): VNode {
-  const node = createCompoundVirtualNode(tagName, props);
-  return node[node.id];
+  const hasChildren = Array.isArray(props?.children) && props.children.length > 0;
+  const isFragment = tagName === "fragment";
+
+  return {
+    id: sequentialId(),
+    tagName: isFragment ? "fragment" : tagName,
+    isFragment,
+    elementProperties: {
+      ...props,
+      // A "nano component" is any element that has children (leaf nodes are plain elements).
+      isParent: props?.isParent ?? hasChildren
+    }
+  };
 }
 
 export const div = (props: VNodeProps) => createElement("div", props);
@@ -35,3 +46,7 @@ export const button = (props: VNodeProps) => createElement("button", props);
 export const h1 = (props: VNodeProps) => createElement("h1", props);
 export const fragment = (props: VNodeProps) => createElement("fragment", props);
 export const t = (tagName: string, props: VNodeProps) => createElement(tagName, props);
+
+// Marks the node as an isolated boundary (state/update scope) without requiring a re-render model.
+export const component = (tagName: string, props: VNodeProps) =>
+  createElement(tagName, { ...props, isBoundary: true });

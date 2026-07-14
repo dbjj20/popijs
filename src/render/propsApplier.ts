@@ -1,4 +1,3 @@
-
 import { template } from "../core/template";
 import { VNode } from "../types/vnode";
 
@@ -8,65 +7,105 @@ type StoredListener = {
 };
 
 type EventRegistry = Map<string, StoredListener>;
+type RenderAction = "create" | "update";
+
+function syncTextNode(node: Node, nextText: string): void {
+  const existingTextNode = node.childNodes[0];
+
+  if (existingTextNode?.nodeName !== "#text") {
+    node.insertBefore(new Text(nextText), existingTextNode ?? null);
+    return;
+  }
+
+  if ((existingTextNode as Text).data !== nextText) {
+    existingTextNode.replaceWith(new Text(nextText));
+  }
+}
 
 export function applyPropsToElement(
   vNode: VNode,
-  action: "create" | "update",
+  action: RenderAction,
   state: Record<string, any> = {},
   flatNode: () => Record<number, any>,
-  setFlatNode: (updater: (prev: Record<number, any>) => Record<number, any>) => void
+  setFlatNode: (updater: (prev: Record<number, any>) => Record<number, any>) => void,
+  changedKeys?: Record<string, any>
 ): Node {
-  if (action === "update") {
-   // debugger
-  }
   const { elementProperties, id } = vNode;
   const { node, events, events_map } = flatNode()[id];
   const props = elementProperties;
+  const eventsToApply = props.events ?? events;
 
   if (node instanceof HTMLElement && props.className) {
     node.className = props.className;
   }
 
   if (props.style) {
-    Object.entries(props.style).forEach(([k, v]) => {
+    for (const k in props.style) {
       if (node instanceof HTMLElement) {
-        (node.style as any)[k] = v;
+        (node.style as any)[k] = (props.style as any)[k];
       }
-    });
+    }
   }
 
-  const excludeList = ["style", "className", "text", "children"];
-  Object.keys(props).forEach((k) => {
-    if (!excludeList.includes(k)) {
-      (node as any)[k] = (props as any)[k];
+  for (const k in props) {
+    switch (k) {
+      case "style":
+      case "className":
+      case "text":
+      case "children":
+      case "events":
+      case "effect":
+      case "isParent":
+      case "isBoundary":
+      case "tagDomProps":
+        break;
+      default:
+        (node as any)[k] = (props as any)[k];
     }
-  });
+  }
 
-  if (props.text) {
-    const renderedText = String(template(props.text, state));
-    const text = new Text(renderedText);
-    if (action === "update" && node.childNodes[0]?.nodeName === "#text") {
-      node.childNodes[0].replaceWith(text);
+  if (props.text != null) {
+    if (action === "update") {
+      const templateText = String(props.text);
+
+      if (templateText.includes("{")) {
+        let referencesChangedKey = false;
+        if (changedKeys) {
+          for (const key in changedKeys) {
+            if (templateText.includes(`{${key}}`) || templateText.includes(`{${key}:`)) {
+              referencesChangedKey = true;
+              break;
+            }
+          }
+        }
+
+        if (!changedKeys || referencesChangedKey) {
+          const renderedText = String(template(templateText, state));
+          syncTextNode(node, renderedText);
+        }
+      }
     } else if (action === "create") {
-      node.appendChild(text);
+      const renderedText = String(template(String(props.text), state));
+      node.appendChild(new Text(renderedText));
     }
   }
 
-  if (events) {
+  if (eventsToApply) {
     const registry: EventRegistry = events_map instanceof Map ? events_map : new Map();
 
     // Remove listeners that are no longer present or changed
     registry.forEach((stored, eventName) => {
-      if (!events[eventName] || events[eventName] !== stored.original) {
+      if (!eventsToApply[eventName] || eventsToApply[eventName] !== stored.original) {
         node.removeEventListener(eventName, stored.wrapped);
         registry.delete(eventName);
       }
     });
 
-    Object.entries(events).forEach(([eventName, fn]) => {
+    for (const eventName in eventsToApply) {
+      const fn = eventsToApply[eventName];
       const stored = registry.get(eventName);
       if (stored && stored.original === fn) {
-        return;
+        continue;
       }
 
       if (stored) {
@@ -80,18 +119,60 @@ export function applyPropsToElement(
       node.addEventListener(eventName, wrapped);
 
       registry.set(eventName, { original: fn, wrapped });
-    });
+    }
 
-    setFlatNode((p) => ({
-      ...p,
-      [id]: { ...p[id], events_map: registry }
-    }));
+    setFlatNode((p) => {
+      p[id].events_map = registry;
+      p[id].events = eventsToApply;
+      return p;
+    });
   }
 
   if (action === "update" && Array.isArray(props.children)) {
-    props.children.forEach((child) => {
-      applyPropsToElement(child, action, state, flatNode, setFlatNode);
-    });
+    for (let i = 0; i < props.children.length; i += 1) {
+      const child = props.children[i];
+      if (child?.elementProperties?.isBoundary) continue;
+      applyPropsToElement(child, action, state, flatNode, setFlatNode, changedKeys);
+    }
   }
+
+  if (action === "update") {
+    runEffect(vNode, action, state, flatNode, setFlatNode);
+  }
+
   return node;
+}
+
+export function runEffect(
+  vNode: VNode,
+  action: RenderAction,
+  state: Record<string, any> = {},
+  flatNode: () => Record<number, any>,
+  setFlatNode: (updater: (prev: Record<number, any>) => Record<number, any>) => void
+): void {
+  const effect = vNode.elementProperties.effect;
+  const entry = flatNode()[vNode.id];
+
+  if (!entry) return;
+
+  if (typeof effect !== "function") {
+    if (typeof entry.effect_cleanup === "function") {
+      entry.effect_cleanup();
+      setFlatNode((p) => {
+        p[vNode.id].effect_cleanup = undefined;
+        return p;
+      });
+    }
+    return;
+  }
+
+  if (typeof entry.effect_cleanup === "function") {
+    entry.effect_cleanup();
+  }
+
+  const cleanup = effect(entry.node, state, action);
+  setFlatNode((p) => {
+    p[vNode.id].effect_cleanup = typeof cleanup === "function" ? cleanup : undefined;
+    return p;
+  });
 }

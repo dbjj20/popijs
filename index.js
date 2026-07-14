@@ -8,6 +8,26 @@ function getHtmlTemplate(r, c) {
 		<head>
 		<title>popijs</title>
 		<style>
+      :root {
+        color: #202124;
+        background: #f7f8fa;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f7f8fa;
+      }
+
+      #v2render {
+        width: min(920px, calc(100vw - 32px));
+        margin: 32px auto;
+      }
+
       .container {
         margin: 0;
         padding-top: 10vh;
@@ -19,6 +39,53 @@ function getHtmlTemplate(r, c) {
       .row {
         display: flex;
         justify-content: center;
+      }
+
+      .capability {
+        background: #fff;
+        border: 1px solid #d9dde3 !important;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(12, 18, 28, 0.06);
+        margin-top: 14px !important;
+        padding: 14px !important;
+      }
+
+      .capability h2 {
+        font-size: 16px;
+        line-height: 1.2;
+        margin: 0 0 10px;
+      }
+
+      button {
+        appearance: none;
+        background: #202124;
+        border: 1px solid #202124;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        margin: 6px 6px 6px 0;
+        min-height: 34px;
+        padding: 6px 12px;
+      }
+
+      button:hover {
+        background: #3b3d42;
+      }
+
+      input {
+        border: 1px solid #b8bec8;
+        border-radius: 6px;
+        font: inherit;
+        margin: 6px 0;
+        min-height: 34px;
+        padding: 6px 10px;
+        width: min(320px, 100%);
+      }
+
+      p,
+      li {
+        line-height: 1.5;
       }
     </style>
     <script type="module">
