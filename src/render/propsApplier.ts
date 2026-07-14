@@ -8,6 +8,7 @@ type StoredListener = {
 
 type EventRegistry = Map<string, StoredListener>;
 type RenderAction = "create" | "update";
+type EffectCleanup = () => void;
 
 function syncTextNode(node: Node, nextText: string): void {
   const existingTextNode = node.childNodes[0];
@@ -155,9 +156,16 @@ export function runEffect(
 
   if (!entry) return;
 
-  if (typeof effect !== "function") {
-    if (typeof entry.effect_cleanup === "function") {
-      entry.effect_cleanup();
+  if (Array.isArray(entry.effect_cleanup)) {
+    for (let i = 0; i < entry.effect_cleanup.length; i += 1) {
+      entry.effect_cleanup[i]();
+    }
+  } else if (typeof entry.effect_cleanup === "function") {
+    entry.effect_cleanup();
+  }
+
+  if (typeof effect !== "function" && !Array.isArray(effect)) {
+    if (entry.effect_cleanup) {
       setFlatNode((p) => {
         p[vNode.id].effect_cleanup = undefined;
         return p;
@@ -166,13 +174,19 @@ export function runEffect(
     return;
   }
 
-  if (typeof entry.effect_cleanup === "function") {
-    entry.effect_cleanup();
+  const cleanups: EffectCleanup[] = [];
+  if (Array.isArray(effect)) {
+    for (let i = 0; i < effect.length; i += 1) {
+      const cleanup = effect[i](entry.node, state, action);
+      if (typeof cleanup === "function") cleanups.push(cleanup);
+    }
+  } else {
+    const cleanup = effect(entry.node, state, action);
+    if (typeof cleanup === "function") cleanups.push(cleanup);
   }
 
-  const cleanup = effect(entry.node, state, action);
   setFlatNode((p) => {
-    p[vNode.id].effect_cleanup = typeof cleanup === "function" ? cleanup : undefined;
+    p[vNode.id].effect_cleanup = cleanups.length > 0 ? cleanups : undefined;
     return p;
   });
 }

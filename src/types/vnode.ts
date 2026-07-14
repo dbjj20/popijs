@@ -1,4 +1,10 @@
 
+export type EffectFunction = (
+  node: Node,
+  state: Record<string, any>,
+  action: "create" | "update"
+) => void | (() => void);
+
 export interface VNodeProps {
   [domProp: string]: any;
   className?: string;
@@ -7,7 +13,7 @@ export interface VNodeProps {
   style?: Partial<CSSStyleDeclaration>;
   tagDomProps?: Record<string, any>;
   children?: VNode[];
-  effect?: (node: Node, state: Record<string, any>, action: "create" | "update") => void | (() => void);
+  effect?: EffectFunction | EffectFunction[];
   isParent?: boolean;
   isBoundary?: boolean;
 }

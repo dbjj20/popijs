@@ -1,5 +1,6 @@
 import { button, div, fragment, t } from "../core/virtualNode";
 import tinyStore from "../store/tinyStore";
+import { CounterCard } from "../../compiler/examples/Counter.popi";
 
 export const BoundaryCounterComponent = (draw: any, objTree: any) => {
   const [counter, setCounter] = tinyStore(0);
@@ -115,20 +116,46 @@ export const EffectDemoComponent = (draw: any, objTree: any) => {
       padding: "12px",
       marginTop: "12px"
     },
-    effect: (node, state, action) => {
-      const element = node as HTMLElement;
-      const count = Number(state.effectRuns ?? 0);
-      element.dataset.effectAction = action;
-      element.style.outline = count % 2 === 0 ? "2px solid #4b8f8c" : "2px solid #c56b4f";
+    effect: [
+      (node, state, action) => {
+        const element = node as HTMLElement;
+        const count = Number(state.effectRuns ?? 0);
+        element.dataset.effectAction = action;
+        element.style.outline = count % 2 === 0 ? "2px solid #4b8f8c" : "2px solid #c56b4f";
 
-      return () => {
-        element.style.outline = "";
-      };
-    },
+        return () => {
+          element.style.outline = "";
+        };
+      },
+      (node, state) => {
+        const element = node as HTMLElement;
+        element.title = `effect runs: ${state.effectRuns ?? 0}`;
+
+        return () => {
+          element.removeAttribute("title");
+        };
+      }
+    ],
     children: [
       t("h2", { text: "Effect demo" }),
       div({ text: "Effect runs: {effectRuns:0}" }),
       button({ text: "run effect", events: { click: triggerEffect } })
     ]
   });
+};
+
+export const CompiledCounterComponent = (draw: any, objTree: any) => {
+  const [counter, setCounter] = tinyStore(0);
+
+  const increase = (_event: Event, node: HTMLElement) => {
+    setCounter((value) => value + 1);
+    draw(objTree(), node, "update", { count: counter() });
+  };
+
+  const decrease = (_event: Event, node: HTMLElement) => {
+    setCounter((value) => value - 1);
+    draw(objTree(), node, "update", { count: counter() });
+  };
+
+  return CounterCard({ increase, decrease });
 };

@@ -1,0 +1,16 @@
+component CounterCard {
+  div(isBoundary, className="capability capability-counter") {
+    h2("Compiled counter")
+    div("Count: {count:0}")
+    button("+", on:click=increase)
+    button("-", on:click=decrease)
+  }
+}
+
+component EchoCard {
+  div(isBoundary, className="capability capability-input") {
+    h2("Compiled echo")
+    input(placeholder="type here", on:input=updateMessage)
+    div("Echo: {echo:}")
+  }
+}

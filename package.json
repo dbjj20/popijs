@@ -10,6 +10,7 @@
     "./template": "./src/core/template.ts"
   },
   "scripts": {
+    "compile:popi": "bun compiler/compilePopi.ts",
     "dev": "bun build.ts && bun --watch index.js"
   },
   "devDependencies": {

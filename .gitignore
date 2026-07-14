@@ -17,6 +17,7 @@ lerna-debug.log*
 # Build output
 
 build/
+generated/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 

@@ -4,6 +4,7 @@ import tinyStore from "../store/tinyStore";
 import AnotherComponent from "./AnotherComponent";
 import {
   BoundaryCounterComponent,
+  CompiledCounterComponent,
   EffectDemoComponent,
   FragmentListComponent,
   InputEchoComponent
@@ -59,6 +60,7 @@ const MainComponent = (draw: any, objTree: any) => {
       InputEchoComponent(draw, objTree),
       FragmentListComponent(draw, objTree),
       EffectDemoComponent(draw, objTree),
+      CompiledCounterComponent(draw, objTree),
       AnotherComponent(draw, objTree)
     ]
   });
