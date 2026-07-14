@@ -13,7 +13,7 @@ const MainComponent = (draw: any, objTree: any) => {
     isBoundary: true,
     className: "app-shell",
     children: [
-      h1({ text: "popijs capability dashboard" }),
+      h1({ text: "PulseDOM capability dashboard" }),
       t("p", {
         text: "Focused examples for scoped updates, compiled .popi views, effects, fragments, and server requests."
       }),

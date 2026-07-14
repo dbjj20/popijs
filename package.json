@@ -1,13 +1,36 @@
 {
-  "name": "dadyjs",
+  "name": "@xdstriker/pulsedom",
+  "version": "0.1.0",
+  "description": "Tiny tree-shakable DOM render library with an optional .popi component compiler.",
   "module": "./src/index.ts",
   "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "dom",
+    "render",
+    "vdom",
+    "tiny",
+    "compiler",
+    "bun"
+  ],
+  "files": [
+    "src",
+    "compiler",
+    "public",
+    "index.js",
+    "build.ts",
+    "README.md",
+    "AGENTS.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./virtual-node": "./src/core/virtualNode.ts",
     "./store": "./src/store/tinyStore.ts",
-    "./template": "./src/core/template.ts"
+    "./template": "./src/core/template.ts",
+    "./compiler": "./compiler/compilePopi.ts",
+    "./popi-plugin": "./compiler/popiPlugin.ts"
   },
   "scripts": {
     "compile:popi": "bun compiler/compilePopi.ts",

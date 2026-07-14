@@ -648,7 +648,7 @@ export function compilePopi(source: string): string {
   const importList = [...imports].sort().join(", ");
   const body = components.map((component) => printComponent(component, localComponents)).join("\n\n");
 
-  return `import { ${importList} } from "dadyjs/virtual-node";\n\n${body}\n`;
+  return `import { ${importList} } from "@xdstriker/pulsedom/virtual-node";\n\n${body}\n`;
 }
 
 if (import.meta.main) {

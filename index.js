@@ -29,7 +29,7 @@ function renderHtmlShell() {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>popijs</title>
+    <title>PulseDOM</title>
     <link rel="stylesheet" href="/public/demo.css">
     <script type="module">${bootScript}</script>
   </head>
