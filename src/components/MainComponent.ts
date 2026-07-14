@@ -2,6 +2,7 @@ import { div, h1, t } from "../core/virtualNode";
 import {
   CompiledCounterComponent,
   CompiledEchoComponent,
+  CompiledOperationsWorkspaceComponent,
   CompiledServerDataComponent,
   EffectDemoComponent,
   FragmentListComponent
@@ -17,6 +18,7 @@ const MainComponent = (draw: any, objTree: any) => {
         text: "Focused examples for scoped updates, compiled .popi views, effects, fragments, and server requests."
       }),
       CompiledServerDataComponent(draw, objTree),
+      CompiledOperationsWorkspaceComponent(draw, objTree),
       CompiledEchoComponent(draw, objTree),
       CompiledCounterComponent(draw, objTree),
       FragmentListComponent(draw, objTree),

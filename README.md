@@ -31,6 +31,24 @@ component CounterCard {
 }
 ```
 
+Components in the same `.popi` file can call each other as tags:
+
+```popi
+component CounterActions {
+  fragment {
+    button("+", on:click=increase)
+    button("-", on:click=decrease)
+  }
+}
+
+component CounterCard {
+  div(isBoundary) {
+    div("Count: {count:0}")
+    CounterActions(increase=increase, decrease=decrease)
+  }
+}
+```
+
 Handlers can also live inside `.popi` components:
 
 ```popi
@@ -55,6 +73,27 @@ handler loadUsers {
   const response = await fetch("/api/mock/users");
   const payload = await response.json();
   update { serverStatus: "loaded", userCount: payload.users.length }
+}
+```
+
+Components can also define local effects. Multiple `effect` blocks are compiled
+into the root VNode as `effect: [firstEffect, secondEffect]`:
+
+```popi
+component OperationsWorkspace {
+  effect syncStatusStyle {
+    const element = node as HTMLElement;
+    element.dataset.status = String(state.workflowStatus ?? "idle");
+  }
+
+  effect mirrorTitle {
+    const element = node as HTMLElement;
+    element.title = `status: ${state.workflowStatus ?? "idle"}`;
+  }
+
+  div(isBoundary) {
+    div("Status: {workflowStatus:idle}")
+  }
 }
 ```
 

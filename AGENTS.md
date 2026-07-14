@@ -114,6 +114,25 @@ component CounterCard {
 }
 ```
 
+Components in the same `.popi` file can be used as tags. The compiler resolves
+those tags to local function calls and passes `scope` through automatically:
+
+```popi
+component CounterActions {
+  fragment {
+    button("+", on:click=increase)
+    button("-", on:click=decrease)
+  }
+}
+
+component CounterCard {
+  div(isBoundary) {
+    div("Count: {count:0}")
+    CounterActions(increase=increase, decrease=decrease)
+  }
+}
+```
+
 Local handlers can be declared before the root element:
 
 ```popi
@@ -139,6 +158,12 @@ Handlers containing `await` compile as async functions. See
 `compiler/examples/ServerPanel.popi` for the request/update demo that calls the
 mock `/api/mock/users` endpoint in `index.js`.
 
+Local `.popi` effects use `effect name { ... }`. If params are omitted, the
+compiler uses `(node, state, action)`. Multiple local effects are injected into
+the component root as `effect: [firstEffect, secondEffect]`. See
+`compiler/examples/OperationsWorkspace.popi` for a larger example with multiple
+effects, async handlers, same-file component composition, and update statements.
+
 Compiled output is normal TS that imports only used VNode helpers:
 
 ```ts
@@ -155,6 +180,8 @@ Rules currently supported:
 - Events: `button("+", on:click=increase)`.
 - Local handlers: `handler updateMessage { ... }` or `handler updateMessage(event, node) { ... }`.
 - Magic update statements inside handlers: `update { echo: event.target.value }`.
+- Local effects: `effect syncDom { ... }`.
+- Same-file components as tags: `CounterActions(increase=increase)`.
 - Nested children using braces.
 - Known helper tags: `div`, `button`, `h1`, `fragment`.
 - Unknown tags compile through `t("tag", props)`.

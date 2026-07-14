@@ -1,6 +1,7 @@
 import { button, div, fragment, t } from "../core/virtualNode";
 import tinyStore from "../store/tinyStore";
 import { CounterCard, EchoCard } from "../../compiler/examples/Counter.popi";
+import { OperationsWorkspace } from "../../compiler/examples/OperationsWorkspace.popi";
 import { ServerDataPanel } from "../../compiler/examples/ServerPanel.popi";
 
 export const FragmentListComponent = (draw: any, objTree: any) => {
@@ -88,4 +89,8 @@ export const CompiledEchoComponent = (draw: any, objTree: any) => {
 
 export const CompiledServerDataComponent = (draw: any, objTree: any) => {
   return ServerDataPanel({ draw, objTree });
+};
+
+export const CompiledOperationsWorkspaceComponent = (draw: any, objTree: any) => {
+  return OperationsWorkspace({ draw, objTree });
 };

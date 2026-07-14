@@ -31,6 +31,12 @@ type HandlerNode = {
   body: string;
 };
 
+type EffectNode = {
+  name: string;
+  params: string;
+  body: string;
+};
+
 type ElementNode = {
   tag: string;
   text?: string;
@@ -42,6 +48,7 @@ type ElementNode = {
 type ComponentNode = {
   name: string;
   handlers: HandlerNode[];
+  effects: EffectNode[];
   root: ElementNode;
 };
 
@@ -119,22 +126,29 @@ function readIdentifier(source: string, index: number): { value: string; next: n
   return { value: source.slice(start, index), next: index };
 }
 
-function removeHandlers(body: string, handlers: HandlerNode[]): string {
+function removeLogicBlocks(
+  body: string,
+  handlers: HandlerNode[],
+  effects: EffectNode[]
+): string {
   let output = "";
   let cursor = 0;
   let index = 0;
 
   while (index < body.length) {
-    if (!startsWithWord(body, index, "handler")) {
+    const isHandler = startsWithWord(body, index, "handler");
+    const isEffect = startsWithWord(body, index, "effect");
+    if (!isHandler && !isEffect) {
       index += 1;
       continue;
     }
 
-    let next = skipWhitespace(body, index + "handler".length);
-    const handlerName = readIdentifier(body, next);
-    next = skipWhitespace(body, handlerName.next);
+    const keyword = isHandler ? "handler" : "effect";
+    let next = skipWhitespace(body, index + keyword.length);
+    const blockName = readIdentifier(body, next);
+    next = skipWhitespace(body, blockName.next);
 
-    let params = "event, node";
+    let params = isHandler ? "event, node" : "node, state, action";
     if (body[next] === "(") {
       const paramsEnd = findMatchingDelimiter(body, next, "(", ")");
       params = body.slice(next + 1, paramsEnd).trim();
@@ -142,15 +156,21 @@ function removeHandlers(body: string, handlers: HandlerNode[]): string {
     }
 
     if (body[next] !== "{") {
-      throw new Error(`Expected handler body at ${next}`);
+      throw new Error(`Expected ${keyword} body at ${next}`);
     }
 
     const bodyEnd = findMatchingDelimiter(body, next, "{", "}");
-    handlers.push({
-      name: handlerName.value,
+    const block = {
+      name: blockName.value,
       params,
       body: body.slice(next + 1, bodyEnd).trim()
-    });
+    };
+
+    if (isHandler) {
+      handlers.push(block);
+    } else {
+      effects.push(block);
+    }
 
     output += body.slice(cursor, index);
     cursor = bodyEnd + 1;
@@ -160,8 +180,13 @@ function removeHandlers(body: string, handlers: HandlerNode[]): string {
   return output + body.slice(cursor);
 }
 
-function extractHandlers(source: string): { source: string; handlers: Map<string, HandlerNode[]> } {
+function extractLogicBlocks(source: string): {
+  source: string;
+  handlers: Map<string, HandlerNode[]>;
+  effects: Map<string, EffectNode[]>;
+} {
   const handlers = new Map<string, HandlerNode[]>();
+  const effects = new Map<string, EffectNode[]>();
   const componentPattern = /component\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\{/g;
   let output = "";
   let cursor = 0;
@@ -174,17 +199,20 @@ function extractHandlers(source: string): { source: string; handlers: Map<string
     const bodyStart = openIndex + 1;
     const body = source.slice(bodyStart, closeIndex);
     const componentHandlers: HandlerNode[] = [];
+    const componentEffects: EffectNode[] = [];
 
     output += source.slice(cursor, bodyStart);
-    output += removeHandlers(body, componentHandlers);
+    output += removeLogicBlocks(body, componentHandlers, componentEffects);
     cursor = closeIndex;
     handlers.set(name, componentHandlers);
+    effects.set(name, componentEffects);
     componentPattern.lastIndex = closeIndex + 1;
   }
 
   return {
     source: output + source.slice(cursor),
-    handlers
+    handlers,
+    effects
   };
 }
 
@@ -267,7 +295,8 @@ class Parser {
 
   constructor(
     private readonly tokens: Token[],
-    private readonly handlers: Map<string, HandlerNode[]>
+    private readonly handlers: Map<string, HandlerNode[]>,
+    private readonly effects: Map<string, EffectNode[]>
   ) {}
 
   parse(): ComponentNode[] {
@@ -286,7 +315,12 @@ class Parser {
     this.expectSymbol("{");
     const root = this.parseElement();
     this.expectSymbol("}");
-    return { name, handlers: this.handlers.get(name) ?? [], root };
+    return {
+      name,
+      handlers: this.handlers.get(name) ?? [],
+      effects: this.effects.get(name) ?? [],
+      root
+    };
   }
 
   private parseElement(): ElementNode {
@@ -411,7 +445,13 @@ function printValue(value: ValueNode, refs: Set<string>): string {
   return value.value;
 }
 
-function printElement(element: ElementNode, refs: Set<string>, indent = 2): string {
+function printElement(
+  element: ElementNode,
+  refs: Set<string>,
+  localComponents: Set<string>,
+  indent = 2,
+  injectedProps: string[] = []
+): string {
   const pad = " ".repeat(indent);
   const nextPad = " ".repeat(indent + 2);
   const props: string[] = [];
@@ -425,6 +465,10 @@ function printElement(element: ElementNode, refs: Set<string>, indent = 2): stri
     props.push(`${prop.name}: ${printValue(prop.value, refs)}`);
   }
 
+  for (let i = 0; i < injectedProps.length; i += 1) {
+    props.push(injectedProps[i]);
+  }
+
   if (element.events.length > 0) {
     const events = element.events.map((event) => {
       refs.add(event.handler);
@@ -435,9 +479,16 @@ function printElement(element: ElementNode, refs: Set<string>, indent = 2): stri
 
   if (element.children.length > 0) {
     const children = element.children
-      .map((child) => printElement(child, refs, indent + 4))
+      .map((child) => printElement(child, refs, localComponents, indent + 4))
       .join(",\n");
     props.push(`children: [\n${children}\n${nextPad}]`);
+  }
+
+  if (localComponents.has(element.tag)) {
+    if (props.length === 0) return `${pad}${element.tag}(scope)`;
+
+    const propsText = `{\n${nextPad}...scope,\n${nextPad}${props.join(`,\n${nextPad}`)}\n${pad}}`;
+    return `${pad}${element.tag}(${propsText})`;
   }
 
   const callee = helperTags.has(element.tag) ? element.tag : `t(${JSON.stringify(element.tag)}`;
@@ -524,11 +575,27 @@ function printHandler(handler: HandlerNode): string {
   return `  const ${handler.name} = ${asyncKeyword}(${handler.params}) => {\n${body}\n  };`;
 }
 
-function printComponent(component: ComponentNode): string {
+function printEffect(effect: EffectNode): string {
+  const asyncKeyword = /\bawait\b/.test(effect.body) ? "async " : "";
+  const body = effect.body
+    .split("\n")
+    .map((line) => `    ${line.trim()}`)
+    .join("\n");
+
+  return `  const ${effect.name} = ${asyncKeyword}(${effect.params}) => {\n${body}\n  };`;
+}
+
+function printComponent(component: ComponentNode, localComponents: Set<string>): string {
   const refs = new Set<string>();
-  const root = printElement(component.root, refs, 2);
+  const injectedProps = component.effects.length > 0
+    ? [`effect: [${component.effects.map((effect) => effect.name).join(", ")}]`]
+    : [];
+  const root = printElement(component.root, refs, localComponents, 2, injectedProps);
   for (let i = 0; i < component.handlers.length; i += 1) {
     refs.delete(component.handlers[i].name);
+  }
+  for (let i = 0; i < component.effects.length; i += 1) {
+    refs.delete(component.effects[i].name);
   }
 
   const refList = [...refs].sort();
@@ -538,29 +605,48 @@ function printComponent(component: ComponentNode): string {
   const handlers = component.handlers.length > 0
     ? `\n${component.handlers.map(printHandler).join("\n\n")}\n`
     : "";
+  const effects = component.effects.length > 0
+    ? `\n${component.effects.map(printEffect).join("\n\n")}\n`
+    : "";
 
-  return `export const ${component.name} = (scope: Record<string, any> = {}) => {${destructure}${handlers}\n  return ${root.trim()};\n};`;
+  return `export const ${component.name} = (scope: Record<string, any> = {}) => {${destructure}${handlers}${effects}\n  return ${root.trim()};\n};`;
 }
 
-function collectImports(element: ElementNode, imports: Set<string>): void {
+function collectImports(
+  element: ElementNode,
+  imports: Set<string>,
+  localComponents: Set<string>
+): void {
+  if (localComponents.has(element.tag)) {
+    for (let i = 0; i < element.children.length; i += 1) {
+      collectImports(element.children[i], imports, localComponents);
+    }
+    return;
+  }
+
   imports.add(helperTags.has(element.tag) ? element.tag : "t");
 
   for (let i = 0; i < element.children.length; i += 1) {
-    collectImports(element.children[i], imports);
+    collectImports(element.children[i], imports, localComponents);
   }
 }
 
 export function compilePopi(source: string): string {
-  const extracted = extractHandlers(source);
-  const components = new Parser(tokenize(extracted.source), extracted.handlers).parse();
+  const extracted = extractLogicBlocks(source);
+  const components = new Parser(
+    tokenize(extracted.source),
+    extracted.handlers,
+    extracted.effects
+  ).parse();
   const imports = new Set<string>();
+  const localComponents = new Set(components.map((component) => component.name));
 
   for (let i = 0; i < components.length; i += 1) {
-    collectImports(components[i].root, imports);
+    collectImports(components[i].root, imports, localComponents);
   }
 
   const importList = [...imports].sort().join(", ");
-  const body = components.map(printComponent).join("\n\n");
+  const body = components.map((component) => printComponent(component, localComponents)).join("\n\n");
 
   return `import { ${importList} } from "dadyjs/virtual-node";\n\n${body}\n`;
 }

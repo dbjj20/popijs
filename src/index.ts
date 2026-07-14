@@ -102,7 +102,7 @@ export default function recursiveRender(
     return;
   }
 
-  root.appendChild(vnode);
   renderChildren(tree, vnode, state);
+  root.appendChild(vnode);
   runEffect(tree, "create", state, flatNode, setFlatNode);
 }

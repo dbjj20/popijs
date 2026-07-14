@@ -1,9 +1,15 @@
+component CounterActions {
+  fragment {
+    button("+", on:click=increase)
+    button("-", on:click=decrease)
+  }
+}
+
 component CounterCard {
   div(isBoundary, className="capability capability-counter") {
     h2("Compiled counter")
     div("Count: {count:0}")
-    button("+", on:click=increase)
-    button("-", on:click=decrease)
+    CounterActions(increase=increase, decrease=decrease)
   }
 }
 
