@@ -32,19 +32,22 @@ export function applyPropsToElement(
   changedKeys?: Record<string, any>
 ): Node {
   const { elementProperties, id } = vNode;
-  const { node, events, events_map } = flatNode()[id];
+  const entry = flatNode()[id];
+  const { node, events, events_map } = entry;
   const props = elementProperties;
   const eventsToApply = props.events ?? events;
+  const isSvg = (props.namespace || entry.namespace) === "http://www.w3.org/2000/svg";
 
-  if (node instanceof HTMLElement && props.className) {
+  if (isSvg && node instanceof Element && props.className) {
+    node.setAttribute("class", props.className);
+  } else if (node instanceof HTMLElement && props.className) {
     node.className = props.className;
   }
 
   if (props.style) {
     for (const k in props.style) {
-      if (node instanceof HTMLElement) {
-        (node.style as any)[k] = (props.style as any)[k];
-      }
+      const style = (node as any).style;
+      if (style) style[k] = (props.style as any)[k];
     }
   }
 
@@ -59,9 +62,14 @@ export function applyPropsToElement(
       case "isParent":
       case "isBoundary":
       case "tagDomProps":
+      case "namespace":
         break;
       default:
-        (node as any)[k] = (props as any)[k];
+        if (isSvg && node instanceof Element) {
+          node.setAttribute(k, String((props as any)[k]));
+        } else {
+          (node as any)[k] = (props as any)[k];
+        }
     }
   }
 

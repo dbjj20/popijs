@@ -78,4 +78,19 @@ describe("compilePL", () => {
     expect(output).toContain('serverStatus: "loading"');
     expect(output).toContain('userCount: payload.users.length');
   });
+
+  test("imports svg helper when svg is used", () => {
+    const output = compilePL(`
+      component SearchIcon {
+        svg(viewBox="0 0 16 16") {
+          path(d="M7 1a6 6 0 1 0 0 12")
+        }
+      }
+    `);
+
+    expect(output).toContain('import { svg, t } from "@xdstriker/pulsedom/virtual-node";');
+    expect(output).toContain("return svg({");
+    expect(output).toContain('t("path"');
+    expect(output).toContain('d: "M7 1a6 6 0 1 0 0 12"');
+  });
 });

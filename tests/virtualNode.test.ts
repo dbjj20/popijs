@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { button, component, div, fragment, t } from "../src/core/virtualNode";
+import { SVG_NS, button, component, div, fragment, island, ns, svg, t } from "../src/core/virtualNode";
 
 describe("virtual node helpers", () => {
   test("creates element nodes with tag, props, and generated id", () => {
@@ -31,5 +31,25 @@ describe("virtual node helpers", () => {
 
     expect(node.tagName).toBe("section");
     expect(node.elementProperties.isBoundary).toBe(true);
+  });
+
+  test("island is a semantic boundary alias", () => {
+    const node = island("section", { text: "Dynamic" });
+
+    expect(node.tagName).toBe("section");
+    expect(node.elementProperties.isBoundary).toBe(true);
+  });
+
+  test("creates svg namespace nodes", () => {
+    const icon = svg({
+      viewBox: "0 0 16 16",
+      children: [
+        ns("path", { d: "M1 1h14v14H1z" })
+      ]
+    });
+
+    expect(icon.tagName).toBe("svg");
+    expect(icon.elementProperties.namespace).toBe(SVG_NS);
+    expect(icon.elementProperties.children?.[0].elementProperties.namespace).toBe(SVG_NS);
   });
 });

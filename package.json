@@ -1,8 +1,9 @@
 {
   "name": "@xdstriker/pulsedom",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Tiny tree-shakable DOM render library with an optional .pl component compiler.",
   "module": "./src/index.ts",
+  "types": "./types/index.d.ts",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -15,6 +16,7 @@
   ],
   "files": [
     "src",
+    "types",
     "compiler",
     "public",
     "index.js",
@@ -25,12 +27,30 @@
   ],
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts",
-    "./virtual-node": "./src/core/virtualNode.ts",
-    "./store": "./src/store/tinyStore.ts",
-    "./template": "./src/core/template.ts",
-    "./compiler": "./compiler/compilePL.ts",
-    "./pl-plugin": "./compiler/plPlugin.ts"
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./src/index.ts"
+    },
+    "./virtual-node": {
+      "types": "./types/virtual-node.d.ts",
+      "import": "./src/core/virtualNode.ts"
+    },
+    "./store": {
+      "types": "./types/store.d.ts",
+      "import": "./src/store/tinyStore.ts"
+    },
+    "./template": {
+      "types": "./types/template.d.ts",
+      "import": "./src/core/template.ts"
+    },
+    "./compiler": {
+      "types": "./types/compiler.d.ts",
+      "import": "./compiler/compilePL.ts"
+    },
+    "./pl-plugin": {
+      "types": "./types/pl-plugin.d.ts",
+      "import": "./compiler/plPlugin.ts"
+    }
   },
   "scripts": {
     "compile:pl": "bun compiler/compilePL.ts",

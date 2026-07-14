@@ -52,7 +52,7 @@ type ComponentNode = {
   root: ElementNode;
 };
 
-const helperTags = new Set(["div", "button", "h1", "fragment"]);
+const helperTags = new Set(["div", "button", "h1", "fragment", "svg"]);
 
 function findMatchingDelimiter(source: string, openIndex: number, open: string, close: string): number {
   let depth = 0;

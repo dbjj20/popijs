@@ -71,7 +71,7 @@ updates that scope.
 
 ```ts
 import render, { objTree, setObjTree } from "@xdstriker/pulsedom";
-import { component, div, button, h1, fragment, t } from "@xdstriker/pulsedom/virtual-node";
+import { component, div, button, h1, fragment, island, svg, ns, t } from "@xdstriker/pulsedom/virtual-node";
 import { template } from "@xdstriker/pulsedom/template";
 import tinyStore from "@xdstriker/pulsedom/store";
 ```
@@ -84,6 +84,8 @@ Available package paths:
 - `@xdstriker/pulsedom/store`: tiny state helpers.
 - `@xdstriker/pulsedom/compiler`: optional `.pl` compiler.
 - `@xdstriker/pulsedom/pl-plugin`: optional Bun build plugin for direct `.pl` imports.
+
+The package includes `.d.ts` files for strict TypeScript projects.
 
 ## Text Templates
 
@@ -121,6 +123,62 @@ component("section", {
 ```
 
 Returning a function registers cleanup for the next effect run.
+
+## Dynamic Islands
+
+PulseDOM does not ship a general list reconciler. For lists and conditionals, use
+small boundaries as replaceable islands:
+
+```ts
+import { replaceBoundary } from "@xdstriker/pulsedom";
+import { button, div, island } from "@xdstriker/pulsedom/virtual-node";
+
+function FilteredList(items: string[]) {
+  return island("section", {
+    children: [
+      button({
+        text: "Show active",
+        events: {
+          click: (_event, node) => {
+            replaceBoundary(node, FilteredList(["Ada", "Grace"]));
+          }
+        }
+      }),
+      ...items.map((item) => div({ text: item }))
+    ]
+  });
+}
+```
+
+This replaces the nearest boundary as a unit. It is intentionally explicit, so
+dynamic lists stay isolated without pulling a reconciler into the runtime.
+
+## SVG
+
+Use `svg(...)` for SVG roots. Children inherit the SVG namespace, and `ns(...)`
+can be used for explicit namespaced elements:
+
+```ts
+import { ns, svg } from "@xdstriker/pulsedom/virtual-node";
+
+const searchIcon = svg({
+  viewBox: "0 0 16 16",
+  children: [
+    ns("path", { d: "M7 1a6 6 0 1 0 0 12" })
+  ]
+});
+```
+
+## Cleanup
+
+For tests, route changes, or remounting a demo, reset the internal registry:
+
+```ts
+import { resetRender, unmount } from "@xdstriker/pulsedom";
+
+resetRender();
+unmount(document.getElementById("app"));
+```
 
 ## Optional .pl Compiler
 

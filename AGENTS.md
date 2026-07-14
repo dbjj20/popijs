@@ -39,6 +39,7 @@ Important registry fields:
 - `parentId`: parent registry id.
 - `isParent`: fallback update scope marker for nodes with children.
 - `isBoundary`: explicit isolated update scope.
+- `namespace`: DOM namespace inherited by SVG descendants.
 - `events_map`: Map of event names to wrapped listeners.
 - `effect_cleanup`: cleanup function array created by effects.
 
@@ -58,6 +59,10 @@ Update flow:
 
 Avoid reintroducing full-tree searches in the update path. If a lookup can be
 stored in the registry, store it there.
+
+For dynamic lists and conditionals, prefer replaceable islands over broad
+reconciliation. Use `island(...)` as a semantic `component(...)` alias and
+`replaceBoundary(node, nextTree)` to replace the nearest boundary as a unit.
 
 ## Effects
 
@@ -225,5 +230,6 @@ PULSEDOM_PORT=1421 bun index.js
 - Do not add broad imports from compiler/tooling into runtime modules.
 - Do not commit generated `build/` or `generated/` output.
 - Preserve `sideEffects: false` and subpath exports in `package.json`.
+- Keep public `.d.ts` files in `types/` aligned with exported runtime helpers.
 - If adding a new runtime feature, add a demo component in `src/components` that
   exercises it.

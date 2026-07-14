@@ -1,15 +1,16 @@
+export type RenderAction = "create" | "update";
 
 export type EffectFunction = (
   node: Node,
   state: Record<string, any>,
-  action: "create" | "update"
+  action: RenderAction
 ) => void | (() => void);
 
 export interface VNodeProps {
   [domProp: string]: any;
   className?: string;
   text?: string;
-  events?: Record<string, (e: Event, node: HTMLElement) => void>;
+  events?: Record<string, (event: Event, node: HTMLElement) => void>;
   style?: Partial<CSSStyleDeclaration>;
   tagDomProps?: Record<string, any>;
   children?: VNode[];

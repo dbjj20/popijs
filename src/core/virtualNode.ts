@@ -2,6 +2,8 @@
 import { sequentialId } from "./sequentialId";
 import { VNode, VNodeProps } from "../types/vnode";
 
+export const SVG_NS = "http://www.w3.org/2000/svg";
+
 export const propsDefinition: VNodeProps = {
   className: "",
   text: undefined,
@@ -46,7 +48,13 @@ export const button = (props: VNodeProps) => createElement("button", props);
 export const h1 = (props: VNodeProps) => createElement("h1", props);
 export const fragment = (props: VNodeProps) => createElement("fragment", props);
 export const t = (tagName: string, props: VNodeProps) => createElement(tagName, props);
+export const svg = (props: VNodeProps) => createElement("svg", { ...props, namespace: SVG_NS });
+export const ns = (tagName: string, props: VNodeProps, namespace = SVG_NS) =>
+  createElement(tagName, { ...props, namespace });
 
 // Marks the node as an isolated boundary (state/update scope) without requiring a re-render model.
 export const component = (tagName: string, props: VNodeProps) =>
   createElement(tagName, { ...props, isBoundary: true });
+
+// Semantic alias for dynamic list/conditional roots that should be replaced as a unit.
+export const island = component;
