@@ -1,0 +1,20 @@
+{
+  "dynamicComponents": [
+    {
+      "module": "./src/components/CapabilityComponents.ts",
+      "exports": [
+        "CompiledServerDataComponent",
+        "CompiledOperationsWorkspaceComponent",
+        "CompiledEchoComponent",
+        "CompiledCounterComponent",
+        "FragmentListComponent",
+        "EffectDemoComponent"
+      ],
+      "placeholder": {
+        "tagName": "section",
+        "className": "capability capability-loading",
+        "text": "Loading..."
+      }
+    }
+  ]
+}

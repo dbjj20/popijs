@@ -16,7 +16,7 @@ const contentTypes = {
 
 const bootScript = `
   import render, { objTree, setObjTree } from "/build/index.js";
-  import MainComponent from "/build/assets/MainComponent.js";
+  import MainComponent from "/build/components/MainComponent.js";
 
   const tree = MainComponent(render, objTree);
   setObjTree(tree);

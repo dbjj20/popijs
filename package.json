@@ -1,6 +1,6 @@
 {
   "name": "@xdstriker/pulsedom",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Tiny tree-shakable DOM render library with an optional .pl component compiler.",
   "module": "./src/index.ts",
   "types": "./types/index.d.ts",
@@ -21,6 +21,7 @@
     "public",
     "index.js",
     "build.ts",
+    "pulsedom.config.json",
     "README.md",
     "AGENTS.md",
     "LICENSE"
@@ -42,6 +43,10 @@
     "./template": {
       "types": "./types/template.d.ts",
       "import": "./src/core/template.ts"
+    },
+    "./lazy": {
+      "types": "./types/lazy.d.ts",
+      "import": "./src/render/lazyComponent.ts"
     },
     "./compiler": {
       "types": "./types/compiler.d.ts",

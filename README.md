@@ -153,6 +153,31 @@ function FilteredList(items: string[]) {
 This replaces the nearest boundary as a unit. It is intentionally explicit, so
 dynamic lists stay isolated without pulling a reconciler into the runtime.
 
+## Config-Driven Lazy Components
+
+For production builds, components can be marked as dynamic without writing
+`import()` at each call site. Declare the exports in `pulsedom.config.json`:
+
+```json
+{
+  "dynamicComponents": [
+    {
+      "module": "./src/components/CapabilityComponents.ts",
+      "exports": ["CompiledServerDataComponent"],
+      "placeholder": {
+        "tagName": "section",
+        "className": "capability capability-loading",
+        "text": "Loading..."
+      }
+    }
+  ]
+}
+```
+
+`build.ts` generates tiny wrappers that keep the same named exports, then
+rewrites imports of the configured module during the Bun build. Each configured
+export becomes a lazy boundary backed by a generated `import()` chunk.
+
 ## SVG
 
 Use `svg(...)` for SVG roots. Children inherit the SVG namespace, and `ns(...)`
