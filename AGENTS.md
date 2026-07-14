@@ -1,4 +1,4 @@
-# popijs Agent Notes
+# PulseDOM Agent Notes
 
 This file is for future LLM/code agents working on this repository. Read it
 before changing runtime or compiler code.
@@ -83,27 +83,27 @@ arbitrarily whether to do work.
 
 Compiler source lives under `compiler/`.
 
-- `compiler/compilePopi.ts`: standalone tokenizer, parser, and code generator.
-- `compiler/popiPlugin.ts`: Bun build plugin for importing `.popi` files from
+- `compiler/compilePL.ts`: standalone tokenizer, parser, and code generator.
+- `compiler/plPlugin.ts`: Bun build plugin for importing `.pl` files from
   TypeScript.
-- `compiler/examples/*.popi`: source examples.
+- `compiler/examples/*.pl`: source examples.
 
 The compiler must remain independent from the runtime bundle. Do not import
-compiler files from `src/index.ts` or runtime modules. Importing `.popi` from
+compiler files from `src/index.ts` or runtime modules. Importing `.pl` from
 demo components is okay because `build.ts` transforms it at build time.
 
 `build.ts` does two compiler-related things:
 
-- Compiles `.popi` files from `compiler/examples` into `generated/popi`.
-- Registers the Bun `.popi` plugin so TypeScript can import `.popi` directly.
+- Compiles `.pl` files from `compiler/examples` into `generated/pl`.
+- Registers the Bun `.pl` plugin so TypeScript can import `.pl` directly.
 
 `build/` and `generated/` are ignored artifacts.
 
-## .popi Syntax
+## .pl Syntax
 
 Example:
 
-```popi
+```text
 component CounterCard {
   div(isBoundary, className="capability capability-counter") {
     h2("Compiled counter")
@@ -114,10 +114,10 @@ component CounterCard {
 }
 ```
 
-Components in the same `.popi` file can be used as tags. The compiler resolves
+Components in the same `.pl` file can be used as tags. The compiler resolves
 those tags to local function calls and passes `scope` through automatically:
 
-```popi
+```text
 component CounterActions {
   fragment {
     button("+", on:click=increase)
@@ -135,7 +135,7 @@ component CounterCard {
 
 Local handlers can be declared before the root element:
 
-```popi
+```text
 component EchoCard {
   handler updateMessage {
     update { echo: event.target.value }
@@ -155,19 +155,19 @@ statement compiles to `scope.draw(scope.objTree(), node, "update", { ... })`.
 stores or services.
 
 Handlers containing `await` compile as async functions. See
-`compiler/examples/ServerPanel.popi` for the request/update demo that calls the
+`compiler/examples/ServerPanel.pl` for the request/update demo that calls the
 mock `/api/mock/users` endpoint in `index.js`.
 
-Local `.popi` effects use `effect name { ... }`. If params are omitted, the
+Local `.pl` effects use `effect name { ... }`. If params are omitted, the
 compiler uses `(node, state, action)`. Multiple local effects are injected into
 the component root as `effect: [firstEffect, secondEffect]`. See
-`compiler/examples/OperationsWorkspace.popi` for a larger example with multiple
+`compiler/examples/OperationsWorkspace.pl` for a larger example with multiple
 effects, async handlers, same-file component composition, and update statements.
 
 Compiled output is normal TS that imports only used VNode helpers:
 
 ```ts
-import { button, div, t } from "dadyjs/virtual-node";
+import { button, div, t } from "@xdstriker/pulsedom/virtual-node";
 ```
 
 Rules currently supported:
@@ -194,6 +194,7 @@ dependencies.
 Use these checks after meaningful edits:
 
 ```bash
+bun test
 bun build.ts
 git diff --check
 ```
@@ -201,7 +202,7 @@ git diff --check
 To test the standalone compiler:
 
 ```bash
-bun run compile:popi compiler/examples/Counter.popi /tmp/popi-counter.ts
+bun run compile:pl compiler/examples/Counter.pl /tmp/pulsedom-counter.ts
 ```
 
 To run the demo server:
@@ -210,10 +211,10 @@ To run the demo server:
 bun dev
 ```
 
-If port `1420` is busy, set `POPI_PORT`.
+If port `1420` is busy, set `PULSEDOM_PORT`.
 
 ```bash
-POPI_PORT=1421 bun index.js
+PULSEDOM_PORT=1421 bun index.js
 ```
 
 ## Editing Guidelines

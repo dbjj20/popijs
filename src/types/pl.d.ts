@@ -1,4 +1,4 @@
-declare module "*.popi" {
+declare module "*.pl" {
   import type { VNode } from "./vnode";
 
   export const CounterActions: (scope?: Record<string, any>) => VNode;

@@ -631,7 +631,7 @@ function collectImports(
   }
 }
 
-export function compilePopi(source: string): string {
+export function compilePL(source: string): string {
   const extracted = extractLogicBlocks(source);
   const components = new Parser(
     tokenize(extracted.source),
@@ -655,11 +655,11 @@ if (import.meta.main) {
   const [, , inputPath, outputPath] = Bun.argv;
 
   if (!inputPath || !outputPath) {
-    console.error("Usage: bun compiler/compilePopi.ts <input.popi> <output.ts>");
+    console.error("Usage: bun compiler/compilePL.ts <input.pl> <output.ts>");
     process.exit(1);
   }
 
   const source = await Bun.file(inputPath).text();
   await mkdir(dirname(outputPath), { recursive: true });
-  await Bun.write(outputPath, compilePopi(source));
+  await Bun.write(outputPath, compilePL(source));
 }

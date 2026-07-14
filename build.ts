@@ -1,9 +1,9 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { compilePopi } from "./compiler/compilePopi";
-import { popiPlugin } from "./compiler/popiPlugin";
+import { compilePL } from "./compiler/compilePL";
+import { plPlugin } from "./compiler/plPlugin";
 
-async function collectPopiFiles(dir: string): Promise<string[]> {
+async function collectPlFiles(dir: string): Promise<string[]> {
     const entries = await readdir(dir, { withFileTypes: true });
     const files: string[] = [];
 
@@ -12,11 +12,11 @@ async function collectPopiFiles(dir: string): Promise<string[]> {
         const path = join(dir, entry.name);
 
         if (entry.isDirectory()) {
-            files.push(...await collectPopiFiles(path));
+            files.push(...await collectPlFiles(path));
             continue;
         }
 
-        if (entry.isFile() && entry.name.endsWith(".popi")) {
+        if (entry.isFile() && entry.name.endsWith(".pl")) {
             files.push(path);
         }
     }
@@ -24,24 +24,24 @@ async function collectPopiFiles(dir: string): Promise<string[]> {
     return files;
 }
 
-async function compilePopiFiles(
+async function compilePlFiles(
     inputDir = "./compiler/examples",
-    outputDir = "./generated/popi"
+    outputDir = "./generated/pl"
 ) {
-    const files = await collectPopiFiles(inputDir);
+    const files = await collectPlFiles(inputDir);
     await mkdir(outputDir, { recursive: true });
 
     for (let i = 0; i < files.length; i += 1) {
         const file = files[i];
         const source = await Bun.file(file).text();
-        const outputName = `${basename(file, ".popi")}.ts`;
-        await Bun.write(join(outputDir, outputName), compilePopi(source));
+        const outputName = `${basename(file, ".pl")}.ts`;
+        await Bun.write(join(outputDir, outputName), compilePL(source));
     }
 }
 
-await compilePopiFiles();
+await compilePlFiles();
 
-const plugins = [popiPlugin()];
+const plugins = [plPlugin()];
 
 await Bun.build({
     entrypoints: ['./src/index.ts'],

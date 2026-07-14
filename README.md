@@ -3,7 +3,7 @@
 Tiny ESM render library focused on extreme DOM update efficiency, minimal bundle
 size, and tree-shakable imports.
 
-The runtime is intentionally small. The optional `.popi` compiler is a build-time
+The runtime is intentionally small. The optional `.pl` compiler is a build-time
 tool and is exposed through separate package paths so it does not enter the
 render bundle unless you import it.
 
@@ -28,7 +28,7 @@ is imported.
 - Reused event listeners where possible.
 - Text templates update only when their referenced keys change.
 - Runtime helpers are split into subpath exports for tree-shaking.
-- The `.popi` syntax compiler is optional and separate from the runtime.
+- The `.pl` syntax compiler is optional and separate from the runtime.
 
 This package currently ships TypeScript source as ESM. It is designed for Bun or
 modern bundlers that can consume TS/ESM package exports.
@@ -82,8 +82,8 @@ Available package paths:
 - `@xdstriker/pulsedom/virtual-node`: VNode creation helpers.
 - `@xdstriker/pulsedom/template`: small `{key:fallback}` text template helper.
 - `@xdstriker/pulsedom/store`: tiny state helpers.
-- `@xdstriker/pulsedom/compiler`: optional `.popi` compiler.
-- `@xdstriker/pulsedom/popi-plugin`: optional Bun build plugin for direct `.popi` imports.
+- `@xdstriker/pulsedom/compiler`: optional `.pl` compiler.
+- `@xdstriker/pulsedom/pl-plugin`: optional Bun build plugin for direct `.pl` imports.
 
 ## Text Templates
 
@@ -122,12 +122,12 @@ component("section", {
 
 Returning a function registers cleanup for the next effect run.
 
-## Optional .popi Compiler
+## Optional .pl Compiler
 
-`.popi` is a friendlier component syntax that compiles into the current VNode
+`.pl` is a friendlier component syntax that compiles into the current VNode
 structure. The compiler is independent from the final render runtime.
 
-```popi
+```text
 component CounterActions {
   fragment {
     button("+", on:click=increase)
@@ -146,7 +146,7 @@ component CounterCard {
 
 Handlers can be declared inside the component:
 
-```popi
+```text
 component EchoCard {
   handler updateMessage {
     update { echo: event.target.value }
@@ -162,7 +162,7 @@ component EchoCard {
 `update { ... }` compiles to a scoped render update for the current boundary.
 Handlers can also use regular JavaScript and `await`.
 
-```popi
+```text
 handler loadUsers {
   update { serverStatus: "loading" }
   const response = await fetch("/api/mock/users");
@@ -173,7 +173,7 @@ handler loadUsers {
 
 Effects are also supported:
 
-```popi
+```text
 component OperationsWorkspace {
   effect syncStatusStyle {
     const element = node as HTMLElement;
@@ -191,36 +191,36 @@ component OperationsWorkspace {
 }
 ```
 
-Compile a `.popi` file in this repository:
+Compile a `.pl` file in this repository:
 
 ```bash
-bun run compile:popi compiler/examples/Counter.popi generated/Counter.ts
+bun run compile:pl compiler/examples/Counter.pl generated/Counter.ts
 ```
 
 Use the compiler from code:
 
 ```ts
-import { compilePopi } from "@xdstriker/pulsedom/compiler";
+import { compilePL } from "@xdstriker/pulsedom/compiler";
 
-const output = compilePopi(source);
+const output = compilePL(source);
 ```
 
-Use direct `.popi` imports in a Bun build:
+Use direct `.pl` imports in a Bun build:
 
 ```ts
-import { popiPlugin } from "@xdstriker/pulsedom/popi-plugin";
+import { plPlugin } from "@xdstriker/pulsedom/pl-plugin";
 
 await Bun.build({
   entrypoints: ["./src/index.ts"],
   outdir: "./build",
-  plugins: [popiPlugin()]
+  plugins: [plPlugin()]
 });
 ```
 
-Then TypeScript can import compiled `.popi` components at build time:
+Then TypeScript can import compiled `.pl` components at build time:
 
 ```ts
-import { CounterCard, EchoCard } from "./components/Counter.popi";
+import { CounterCard, EchoCard } from "./components/Counter.pl";
 ```
 
 ## Local Demo
@@ -237,8 +237,14 @@ Run the demo server:
 bun dev
 ```
 
-`bun dev` runs `build.ts`, compiles the `.popi` examples into `generated/popi`,
+`bun dev` runs `build.ts`, compiles the `.pl` examples into `generated/pl`,
 builds the demo bundle, and starts `index.js`.
+
+Run tests:
+
+```bash
+bun test
+```
 
 ## Publishing Checklist
 
@@ -246,7 +252,8 @@ Before publishing to npm:
 
 ```bash
 bun install
-bun run compile:popi compiler/examples/Counter.popi generated/Counter.ts
+bun test
+bun run compile:pl compiler/examples/Counter.pl generated/Counter.ts
 npm pack --dry-run
 npm publish --access public
 ```

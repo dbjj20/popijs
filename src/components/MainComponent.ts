@@ -15,7 +15,7 @@ const MainComponent = (draw: any, objTree: any) => {
     children: [
       h1({ text: "PulseDOM capability dashboard" }),
       t("p", {
-        text: "Focused examples for scoped updates, compiled .popi views, effects, fragments, and server requests."
+        text: "Focused examples for scoped updates, compiled .pl views, effects, fragments, and server requests."
       }),
       CompiledServerDataComponent(draw, objTree),
       CompiledOperationsWorkspaceComponent(draw, objTree),

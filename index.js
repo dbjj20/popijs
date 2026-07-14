@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import path from "path";
 
-const port = Bun.env.POPI_PORT || 1420;
+const port = Bun.env.PULSEDOM_PORT || Bun.env.POPI_PORT || 1420;
 const assetRoots = new Set(["public", "build"]);
 
 const contentTypes = {

@@ -1,8 +1,8 @@
 import { button, div, fragment, t } from "../core/virtualNode";
 import tinyStore from "../store/tinyStore";
-import { CounterCard, EchoCard } from "../../compiler/examples/Counter.popi";
-import { OperationsWorkspace } from "../../compiler/examples/OperationsWorkspace.popi";
-import { ServerDataPanel } from "../../compiler/examples/ServerPanel.popi";
+import { CounterCard, EchoCard } from "../../compiler/examples/Counter.pl";
+import { OperationsWorkspace } from "../../compiler/examples/OperationsWorkspace.pl";
+import { ServerDataPanel } from "../../compiler/examples/ServerPanel.pl";
 
 export const FragmentListComponent = (draw: any, objTree: any) => {
   const [selected, setSelected] = tinyStore("none");

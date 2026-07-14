@@ -1,7 +1,7 @@
 {
   "name": "@xdstriker/pulsedom",
   "version": "0.1.0",
-  "description": "Tiny tree-shakable DOM render library with an optional .popi component compiler.",
+  "description": "Tiny tree-shakable DOM render library with an optional .pl component compiler.",
   "module": "./src/index.ts",
   "type": "module",
   "license": "MIT",
@@ -29,11 +29,12 @@
     "./virtual-node": "./src/core/virtualNode.ts",
     "./store": "./src/store/tinyStore.ts",
     "./template": "./src/core/template.ts",
-    "./compiler": "./compiler/compilePopi.ts",
-    "./popi-plugin": "./compiler/popiPlugin.ts"
+    "./compiler": "./compiler/compilePL.ts",
+    "./pl-plugin": "./compiler/plPlugin.ts"
   },
   "scripts": {
-    "compile:popi": "bun compiler/compilePopi.ts",
+    "compile:pl": "bun compiler/compilePL.ts",
+    "test": "bun test",
     "dev": "bun build.ts && bun --watch index.js"
   },
   "devDependencies": {
